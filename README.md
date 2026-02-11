@@ -1,17 +1,18 @@
-# Post -- Exploring Bayesian Optimization
-### Breaking Bayesian Optimization into small, sizable chunks.
+# How to Change Your Mind | The Last Assumption (Interactive Edition)
 
-To view the rendered version of the post, visit: https://distill.pub/2020/bayesian-optimization/
+Distill-style interactive chapter adaptation of *The Last Assumption* Chapter 8 ("How to Change Your Mind").
 
-![](https://nipunbatra.github.io/distillpub/public/images/MAB_gifs/mab-gp-10.gif)
+## Local preview
 
-Authors
--------
-[Apoorv Agnihotri](https://apoorvagnihotri.github.io/) and [Nipun Batra](https://nipunbatra.github.io/) (both IIT Gandhinagar)
+- Offline: open `public/index.html` in a browser.
+- Local server (recommended):
+  - `cd public`
+  - `python3 -m http.server 8011`
+  - open `http://127.0.0.1:8011/index.html`
 
-Offline viewing
----------------
+The local server path is best when browser security policies affect local file behavior.
 
-Open `public/index.html` in your browser.
+## Project docs
 
-*NB - the citations may not appear correctly in the offline render*
+- Distill authoring and interaction guidance: `distill_context.md`
+- Manual QA matrix for polish/regression: `QA_CHECKLIST.md`

@@ -1,0 +1,39 @@
+name: Repository Guardrails
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  prevent-large-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block archived heavy path and oversized tracked files
+        run: |
+          set -euo pipefail
+
+          if git ls-files 'public/images/MAB_gifs/**' | grep -q .; then
+            echo "Blocked: files under public/images/MAB_gifs are not allowed in history."
+            exit 1
+          fi
+
+          max_bytes=$((10 * 1024 * 1024))
+          offenders=0
+          while IFS= read -r file; do
+            size=$(wc -c < "$file")
+            if [ "$size" -gt "$max_bytes" ]; then
+              echo "Blocked: $file is ${size} bytes (> ${max_bytes})."
+              offenders=1
+            fi
+          done < <(git ls-files)
+
+          if [ "$offenders" -ne 0 ]; then
+            exit 1
+          fi
