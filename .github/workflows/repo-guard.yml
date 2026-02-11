@@ -15,17 +15,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Block archived heavy path and oversized tracked files
+      - name: Block non-publishable artifacts in public and oversized tracked files
         run: |
           set -euo pipefail
 
-          if git ls-files 'public/images/MAB_gifs/**' | grep -q .; then
-            echo "Blocked: files under public/images/MAB_gifs are not allowed in history."
-            exit 1
-          fi
+          offenders=0
+          while IFS= read -r file; do
+            case "$file" in
+              public/.DS_Store|public/**/.DS_Store)
+                echo "Blocked: OS metadata file in published tree: $file"
+                offenders=1
+                ;;
+            esac
+
+            case "$file" in
+              public/*.zip|public/**/*.zip|\
+              public/*.7z|public/**/*.7z|\
+              public/*.rar|public/**/*.rar|\
+              public/*.tar|public/**/*.tar|\
+              public/*.tgz|public/**/*.tgz|\
+              public/*.gz|public/**/*.gz|\
+              public/*.bz2|public/**/*.bz2|\
+              public/*.xz|public/**/*.xz|\
+              public/*.har|public/**/*.har|\
+              public/*.heic|public/**/*.heic|\
+              public/*.heif|public/**/*.heif|\
+              public/*.psd|public/**/*.psd|\
+              public/*.ai|public/**/*.ai|\
+              public/*.sketch|public/**/*.sketch)
+                echo "Blocked: non-runtime artifact type under public/: $file"
+                offenders=1
+                ;;
+            esac
+
+            case "$file" in
+              public/references/*|public/prompts/*|public/notes/*|public/tools/*)
+                echo "Blocked: internal folder accidentally placed under public/: $file"
+                offenders=1
+                ;;
+            esac
+          done < <(git ls-files public)
 
           max_bytes=$((10 * 1024 * 1024))
-          offenders=0
           while IFS= read -r file; do
             size=$(wc -c < "$file")
             if [ "$size" -gt "$max_bytes" ]; then

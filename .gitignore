@@ -1,5 +1,10 @@
+# OS/editor noise
+.DS_Store
+**/.DS_Store
 *.ipynb_checkpoints/
-public/images/data
+
+# Local build/archive artifacts
 public.zip
-public/images/*.pkl
-public/images/MAB_gifs/
+
+# Internal scratch capture area (kept untracked)
+references/captures/tmp/

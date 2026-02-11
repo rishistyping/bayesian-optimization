@@ -62,6 +62,8 @@
     var opts = Object.assign({}, DEFAULTS, options || {});
     var reducedMotion = false;
     var destroyed = false;
+    var documentRef = window.document || (typeof document !== "undefined" ? document : null);
+    var pageVisible = !!(!documentRef || !documentRef.hidden);
 
     var width = 0;
     var height = 0;
@@ -69,6 +71,7 @@
     var timer = null;
     var resizeObserver = null;
     var hasWindowResizeListener = false;
+    var visibilityHandler = null;
     var lastFrameAt = performance.now();
 
     var dropId = 0;
@@ -306,8 +309,19 @@
       renderDropSelection(drops);
     }
 
+    function refreshTimerState() {
+      if (destroyed) {
+        return;
+      }
+      if (reducedMotion || !pageVisible) {
+        stopTimer();
+        return;
+      }
+      startTimer();
+    }
+
     function startTimer() {
-      if (destroyed || reducedMotion || timer) {
+      if (destroyed || reducedMotion || !pageVisible || timer) {
         return;
       }
       lastFrameAt = performance.now();
@@ -327,7 +341,7 @@
         stopTimer();
         renderStaticSnapshot();
       } else {
-        startTimer();
+        refreshTimerState();
       }
     }
 
@@ -379,6 +393,10 @@
         window.removeEventListener("resize", handleResize);
       }
       hasWindowResizeListener = false;
+      if (visibilityHandler && documentRef && typeof documentRef.removeEventListener === "function") {
+        documentRef.removeEventListener("visibilitychange", visibilityHandler);
+        visibilityHandler = null;
+      }
       drops = [];
       rootSel.selectAll("*").remove();
     }
@@ -402,7 +420,15 @@
       hasWindowResizeListener = true;
     }
 
-    startTimer();
+    if (documentRef && typeof documentRef.addEventListener === "function") {
+      visibilityHandler = function () {
+        pageVisible = !documentRef.hidden;
+        refreshTimerState();
+      };
+      documentRef.addEventListener("visibilitychange", visibilityHandler);
+    }
+
+    refreshTimerState();
 
     return {
       setReducedMotion: setReducedMotion,

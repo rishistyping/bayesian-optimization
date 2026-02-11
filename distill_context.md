@@ -1,87 +1,102 @@
 # Distill Context for This Repo
 
-## Overview
-This project is a Distill-style static interactive chapter for *The Last Assumption*. Keep the essay readable first, then interactive second. Changes should preserve the narrative arc and avoid turning the page into an app dashboard.
+## Purpose + Scope
+This is the canonical design and interaction guideline document for this repository. It captures how this project applies Distill authoring conventions and interactive-article practices while keeping a static, offline-friendly implementation.
 
-## Distill Structure in This Repo
-- Preserve and reuse the current Distill custom elements:
-  - `d-front-matter` for metadata
-  - `d-title` for chapter heading
-  - `d-byline` for author metadata block
-  - `d-article` for narrative body
-  - `d-figure` and `figcaption` for explorable/figure framing
-  - `d-math` for inline or block math
-- Keep article-level branding/content in `public/index.html` and article CSS in `public/css/styles.css`.
-- Keep explorable-specific visuals and controls in `public/css/rain.css` and `public/js/rain/*`.
+Source: https://distill.pub/guide/
 
-## Layout and Reading Ergonomics
-- Favor consistent vertical rhythm over dense UI.
-- Keep sections in a linear reading flow; avoid sticky panels that compete with prose.
-- Use compact, readable paragraph lengths and avoid abrupt full-width control blocks unless necessary.
-- For chapter-level elements (title, chapter nav), use subtle styling and spacing that matches the existing page rhythm.
+## Project Structure + Publishing Boundary
+This repo follows the Distill project-structure pattern where publishable files are isolated in `public/` and only that tree is deployed. Internal artifacts (prompts, notes, captures, specs, prototypes, utilities) must stay outside `public/`.
 
-## Figures and Media
-- Every major figure/explorable should have a clear `figcaption`.
-- Prefer responsive SVG/HTML elements over heavy binary media.
-- Avoid large animated assets and repeated raster exports in history.
-- If media is needed, compress and verify size before committing.
-- Keep figure styling scoped so it does not leak into general article typography.
+Source: https://distill.pub/guide/
 
-## Interaction Design
-- Use progressive disclosure: readers should not have to learn all controls at once.
-- In this repo, narrative unlock by step is intentional; preserve it when adding features.
-- Avoid "play ahead" UI that lets readers skip conceptual setup without context.
-- Controls should support guided narrative first, sandbox second.
+## Distill Article Anatomy in This Repo
+Preserve these structural patterns used in the current chapter implementation:
+- `d-front-matter` for metadata
+- `d-title` and `d-byline` for article identity
+- `d-article` for prose and section flow
+- `d-figure` for explorable blocks
+- `d-math` for formulas
 
-## Accessibility
-- All interactive controls must be keyboard reachable.
-- Provide visible `:focus-visible` states for links, buttons, and inputs.
-- Use semantic landmarks (`nav`, `section`, `figure`) and labels (`aria-label`) where useful.
-- Ensure color choices preserve contrast against light backgrounds.
-- Respect `prefers-reduced-motion`: disable or simplify non-essential animations.
-- Keep live regions concise and meaningful; avoid chatty announcements.
+Repo mapping:
+- Entry page: `public/index.html`
+- Article-level styling: `public/css/styles.css`
+- Explorable styling: `public/css/rain.css`
+- Runtime interaction logic: `public/js/rain/*`
 
-## Performance
-- Prefer simple DOM/SVG updates and bounded transitions.
-- Avoid layout thrash (read/write style loops) in animation logic.
-- Keep particle and transition counts moderate for mobile safety.
-- Recompute only what changed; avoid full redraws when a local update is enough.
-- Keep page offline-friendly: no required CDN/runtime dependencies.
+Source: https://distill.pub/guide/
 
-## Citations and Footnotes
-- Use concise citations and footnote patterns consistent with Distill-style longform writing.
-- Keep footnotes readable and scannable; avoid citation spam in dense UI regions.
-- If adding chapter references, tie them to narrative claims, not decorative callouts.
+## Layout + Reading Ergonomics
+Preserve Distill reading rhythm:
+- Keep prose flow primary and controls secondary.
+- Use spacing and figure cadence to guide attention.
+- Use page/body/screen/gutter layout intent when adding new sections.
+- Keep chapter navigation low-emphasis and non-intrusive.
 
-## Local Preview Caveats
-- Opening `public/index.html` directly with `file://` can trigger browser restrictions.
-- Preferred preview:
-  - `cd public`
-  - `python3 -m http.server 8011`
-  - open `http://127.0.0.1:8011/index.html`
+Source: https://distill.pub/guide/
 
-## Distill Tone
-- Keep prose crisp and concrete.
-- Use show-then-tell structure: concrete example first, abstraction second.
-- Minimize jargon; define terms when introduced.
-- Maintain confident, non-hyped instructional voice.
-- Keep paragraphs short enough for scanning while preserving argument continuity.
+## Interaction Best Practices for This Repo
+Interaction must follow narrative-first teaching goals:
+- Use progressive disclosure so users meet concepts in sequence.
+- Prefer details-on-demand to avoid visual overload.
+- Keep play/replay interruptible by direct user input.
+- Use scrollytelling patterns only when they clarify causality.
+- Avoid adding interactivity where static explanation is clearer.
 
-## Repo File Map
-- `public/index.html`: chapter structure, Distill elements, explorable placement.
-- `public/css/styles.css`: article-level typography/chrome.
-- `public/css/rain.css`: explorable-specific layout and interactions.
-- `public/js/template.v2.js`: Distill template/runtime integration.
-- `public/js/hider.js`: progressive reveal/collapsible behavior.
-- `public/js/rain/rain_model.js`: Bayesian model math/state helpers.
-- `public/js/rain/rain_engine.js`: explorable rendering, controls, replay behavior.
-- `public/[GENERATIVE] TLA Final Edit.md`: manuscript reference for chapter naming and sequencing.
+Source: https://distill.pub/2020/communicating-with-interactive-articles/
 
-## Manuscript Chapter Mapping
-- Current explorable corresponds to Chapter 8 in manuscript: **How to Change Your Mind**.
-- When wiring chapter navigation, use manuscript-aligned slugs so future chapter pages can be added without renaming existing links.
+## Accessibility Guidance
+Accessibility baseline for all interactive additions:
+- Keyboard operable controls and logical focus order.
+- Visible and consistent focus styling.
+- ARIA labels/live regions only where they improve comprehension.
+- `prefers-reduced-motion` support for animations and auto-play features.
+- Adequate contrast in both light and dark themes.
+
+Source: https://distill.pub/2020/communicating-with-interactive-articles/
+
+## Performance Guidance
+Keep interactions smooth and maintainable:
+- Avoid layout thrash in animation loops.
+- Keep SVG updates bounded and incremental.
+- Reuse DOM nodes for pooled visuals (particles/streaks).
+- Clamp timer deltas to avoid jumps after tab inactivity.
+- Keep runtime fully local/offline-capable.
+
+Source: https://distill.pub/2020/communicating-with-interactive-articles/
+
+## Preview Caveats (`file://` vs local server)
+`file://` is acceptable for quick static checks, but local HTTP serving is recommended for reliable script/runtime behavior.
+
+Recommended preview:
+- `cd public`
+- `python3 -m http.server 8011`
+- open `http://127.0.0.1:8011/index.html`
+
+Source: https://distill.pub/guide/
+
+## Reuse, Licensing, and Attribution Checklist
+Use Distill FAQ guidance for reuse:
+- Distill text/diagrams are generally CC-BY unless noted otherwise.
+- Distill interactive code is generally MIT unless noted otherwise.
+- Third-party assets marked as external figures are not covered by blanket reuse.
+
+How we attribute in this repo:
+- Keep source URLs in docs for borrowed patterns.
+- Record acknowledgements in `THIRD_PARTY_NOTICES.md`.
+- Do not import third-party figures/code without explicit license compatibility.
+
+Source: https://distill.pub/faq/
+
+## Repo-Specific Workflow Rules
+- Publish boundary: `public/**` only.
+- Internal artifacts: `references/`, `prompts/`, `notes/`, `tools/`.
+- Keep non-runtime files out of `public/`.
+- Keep Bayesian model math authoritative in `public/js/rain/rain_model.js`.
+
+Source: https://distill.pub/guide/
 
 ## References
-- Distill Author Guide: https://distill.pub/guide/
-- Distill FAQ (licensing and reuse notes): https://distill.pub/faq/
-- Repo local notes: `README.md`
+- Distill Guide: https://distill.pub/guide/
+- Distill FAQ: https://distill.pub/faq/
+- Communicating with Interactive Articles: https://distill.pub/2020/communicating-with-interactive-articles/

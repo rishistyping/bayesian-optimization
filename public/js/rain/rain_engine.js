@@ -1,5 +1,5 @@
 (function () {
-  var LOCKED_HELP_ID = "controls-locked-note";
+  var LOCKED_HELP_ID = "";
   var PARTICLE_COUNT = 320;
   var PARTICLE_DURATION_MS = 520;
   var PARTICLE_RADIUS_PX = 1.9;
@@ -8,7 +8,9 @@
   var CDF_BINS = 256;
   var SHAPE_EPS = 1e-3;
   var PROB_EPS = 1e-6;
-  var DECISION_THRESHOLD = 0.60;
+  var DEFAULT_DECISION_THRESHOLD = 0.60;
+  var DEFAULT_FALSE_POSITIVE_COST = 1.0;
+  var DEFAULT_FALSE_NEGATIVE_COST = 1.0;
   var REPLAY_STEP_HOLD_MS = { 1: 1000, 2: 1000, 3: 1000, 4: 900 };
   var REPLAY_STEP_HOLD_MS_REDUCED = { 1: 450, 2: 450, 3: 450, 4: 450 };
   var REPLAY_TRANSITION_MS = 420;
@@ -19,6 +21,7 @@
   var REPLAY_LOOP_GAP_MS = 220;
   var RAIN_PREVIEW_EVIDENCE_BITS = 1.5;
   var RAIN_PREVIEW_LARGE_DELTA = 0.06;
+  var PREDICTION_SAME_DELTA = 0.03;
 
   function percent(value) {
     return (value * 100).toFixed(1) + "%";
@@ -43,17 +46,6 @@
 
   function approximatelyEqual(a, b, eps) {
     return Math.abs(a - b) <= (eps || 0.005);
-  }
-
-  function deriveMoveLabel(state) {
-    var delta = Math.abs(state.posterior - state.prior);
-    if (delta >= 0.2) {
-      return "big move";
-    }
-    if (delta >= 0.08) {
-      return "medium move";
-    }
-    return "small move";
   }
 
   function deriveRainPreviewSignals(model) {
@@ -245,6 +237,30 @@
       hasAny = true;
     }
 
+    var decisionThreshold = parseHashNumber(params.get("dt"));
+    if (decisionThreshold !== null) {
+      partial.decisionThreshold = decisionThreshold;
+      hasAny = true;
+    }
+
+    var falsePositiveCost = parseHashNumber(params.get("cfp"));
+    if (falsePositiveCost !== null) {
+      partial.falsePositiveCost = falsePositiveCost;
+      hasAny = true;
+    }
+
+    var falseNegativeCost = parseHashNumber(params.get("cfn"));
+    if (falseNegativeCost !== null) {
+      partial.falseNegativeCost = falseNegativeCost;
+      hasAny = true;
+    }
+
+    var useCostThreshold = params.get("uc");
+    if (useCostThreshold === "1" || useCostThreshold === "0") {
+      partial.useCostThreshold = useCostThreshold === "1";
+      hasAny = true;
+    }
+
     return hasAny ? partial : null;
   }
 
@@ -253,6 +269,10 @@
     params.set("prior", fixed(state.prior, 2));
     params.set("tgr", fixed(state.tGivenR, 2));
     params.set("tgnr", fixed(state.tGivenNotR, 2));
+    params.set("dt", fixed(state.decisionThreshold, 2));
+    params.set("cfp", fixed(state.falsePositiveCost, 1));
+    params.set("cfn", fixed(state.falseNegativeCost, 1));
+    params.set("uc", state.useCostThreshold ? "1" : "0");
 
     var nextHash = "#" + params.toString();
     if (window.location.hash !== nextHash) {
@@ -349,6 +369,7 @@
 
   function applyUnlock(root, unlockStep) {
     var controls = Array.prototype.slice.call(root.querySelectorAll("[data-step]"));
+    var storySubsections = Array.prototype.slice.call(document.querySelectorAll("[data-story-step]"));
 
     controls.forEach(function (block) {
       var step = Number(block.getAttribute("data-step"));
@@ -377,12 +398,47 @@
         toggleDescribedBy(control, LOCKED_HELP_ID, !unlocked);
       });
     });
+
+    storySubsections.forEach(function (section) {
+      var sectionStep = Number(section.getAttribute("data-story-step"));
+      var storyUnlocked = sectionStep <= unlockStep;
+      var content = section.querySelector(".story-subsection-content");
+      var lockNote = section.querySelector(".story-subsection-lock-note");
+
+      section.classList.toggle("is-story-locked", !storyUnlocked);
+
+      if (storyUnlocked) {
+        section.removeAttribute("aria-disabled");
+      } else {
+        section.setAttribute("aria-disabled", "true");
+      }
+
+      if (content) {
+        content.hidden = !storyUnlocked;
+        content.setAttribute("aria-hidden", storyUnlocked ? "false" : "true");
+      }
+
+      if (lockNote) {
+        lockNote.hidden = storyUnlocked;
+        lockNote.setAttribute("aria-hidden", storyUnlocked ? "true" : "false");
+      }
+    });
   }
 
   function initRainEngine(rootId) {
     var root = document.getElementById(rootId);
     if (!root || !window.RainModel) {
       return;
+    }
+
+    // Hide loading state and show engine shell
+    var loadingEl = document.getElementById("engine-loading");
+    var shellEl = root.querySelector(".engine-shell");
+    if (loadingEl) {
+      loadingEl.classList.add("is-hidden");
+    }
+    if (shellEl) {
+      shellEl.classList.add("is-ready");
     }
 
     var priorSlider = root.querySelector("#prior-slider");
@@ -407,6 +463,7 @@
 
     var summary = root.querySelector("#posterior-live");
     var announcer = root.querySelector("#posterior-live-announcer");
+    var engineMotionNote = root.querySelector("#engine-motion-note");
 
     var advancedPt = root.querySelector("#advanced-pt");
     var advancedNum = root.querySelector("#advanced-num");
@@ -422,13 +479,23 @@
     var decisionText = root.querySelector("#decision-text");
     var decisionUmbrella = root.querySelector("#decision-umbrella");
     var decisionThresholdReadout = root.querySelector("#decision-threshold-readout");
+    var decisionThresholdSlider = root.querySelector("#decision-threshold-slider");
+    var decisionThresholdValue = root.querySelector("#decision-threshold-value");
+    var decisionUseCosts = root.querySelector("#decision-use-costs");
+    var costFalsePositive = root.querySelector("#cost-false-positive");
+    var costFalsePositiveValue = root.querySelector("#cost-false-positive-value");
+    var costFalseNegative = root.querySelector("#cost-false-negative");
+    var costFalseNegativeValue = root.querySelector("#cost-false-negative-value");
+    var decisionLossReadout = root.querySelector("#decision-loss-readout");
     var rainPreviewMount = root.querySelector("#rain-preview");
     var rainPreviewProb = root.querySelector("#rain-preview-prob");
     var rainPreviewCertainty = root.querySelector("#rain-preview-certainty");
-
-    var guessFirst = root.querySelector("#guess-first");
-    var revealGuess = root.querySelector("#reveal-guess");
-    var intuition = root.querySelector("#intuition-feedback");
+    var conditionalPanel = document.getElementById("conditional-probability-panel");
+    var conditionalMotionNote = document.getElementById("cp-motion-note");
+    var copyLinkButton = root.querySelector("#copy-link-btn");
+    var copyLinkStatus = root.querySelector("#copy-link-status");
+    var predictionButtons = Array.prototype.slice.call(root.querySelectorAll("button[data-predict]"));
+    var predictionFeedback = root.querySelector("#prediction-feedback");
 
     var resetButton = root.querySelector("#reset-state");
     var presetButtons = Array.prototype.slice.call(root.querySelectorAll("button[data-preset]"));
@@ -437,6 +504,9 @@
     var reduceMotionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
     var prefersReducedMotion = !!(reduceMotionQuery && reduceMotionQuery.matches);
     var rainPreview = null;
+    var conditionalViz = null;
+    var conditionalUserPerspective = "universe";
+    var conditionalReplayControlled = false;
     var particleRafId = null;
     var particles = [];
     var particleWidth = 0;
@@ -451,12 +521,21 @@
       startedAtMs: 0,
       totalMs: 0
     };
+    var copyLinkStatusTimer = null;
+    var predictionChoice = null;
+    var inputRenderRafId = null;
 
     var unlockStep = 1;
     var state = {
       prior: window.RainModel.PRESETS.canonical.prior,
       tGivenR: window.RainModel.PRESETS.canonical.tGivenR,
       tGivenNotR: window.RainModel.PRESETS.canonical.tGivenNotR
+    };
+    var decisionState = {
+      threshold: DEFAULT_DECISION_THRESHOLD,
+      useCostThreshold: false,
+      falsePositiveCost: DEFAULT_FALSE_POSITIVE_COST,
+      falseNegativeCost: DEFAULT_FALSE_NEGATIVE_COST
     };
 
     var hashPartial = getInputFromHash();
@@ -466,6 +545,12 @@
         tGivenR: window.RainModel.clamp01(hashPartial.tGivenR !== undefined ? hashPartial.tGivenR : state.tGivenR),
         tGivenNotR: window.RainModel.clamp01(hashPartial.tGivenNotR !== undefined ? hashPartial.tGivenNotR : state.tGivenNotR)
       };
+      decisionState.threshold = clamp01(hashPartial.decisionThreshold !== undefined ? hashPartial.decisionThreshold : decisionState.threshold);
+      decisionState.falsePositiveCost = Math.max(0.1, Number.isFinite(hashPartial.falsePositiveCost) ? hashPartial.falsePositiveCost : decisionState.falsePositiveCost);
+      decisionState.falseNegativeCost = Math.max(0.1, Number.isFinite(hashPartial.falseNegativeCost) ? hashPartial.falseNegativeCost : decisionState.falseNegativeCost);
+      if (typeof hashPartial.useCostThreshold === "boolean") {
+        decisionState.useCostThreshold = hashPartial.useCostThreshold;
+      }
     }
     particles = createParticles(state.prior, PARTICLE_COUNT);
 
@@ -485,16 +570,51 @@
       }
     }
 
+    if (window.RainConditionalD3 && typeof window.RainConditionalD3.init === "function" && conditionalPanel) {
+      conditionalViz = window.RainConditionalD3.init(conditionalPanel, {
+        reducedMotion: prefersReducedMotion,
+        maxDrops: 180,
+        spawnMs: 55,
+        onUserInteraction: function (detail) {
+          if (detail && detail.type === "perspective" && detail.perspective) {
+            conditionalUserPerspective = detail.perspective;
+          }
+          if (replay.mode === "playing") {
+            cancelReplay("conditional-interaction", { keepVisualState: false, keepProgress: false });
+            render({ persistHash: false, resampleParticles: false, animateParticles: false });
+          }
+        }
+      });
+    }
+
     var announcePosterior = debounce(function (message) {
       if (announcer) {
         announcer.textContent = message;
       }
     }, 120);
 
+    function updateMotionModeNotes() {
+      var message = "Reduced motion enabled: animations are shown as static states.";
+      var show = !!prefersReducedMotion;
+      if (engineMotionNote) {
+        engineMotionNote.hidden = !show;
+        engineMotionNote.textContent = show ? message : "";
+      }
+      if (conditionalMotionNote) {
+        conditionalMotionNote.hidden = !show;
+        conditionalMotionNote.textContent = show ? message : "";
+      }
+    }
+
     function onReducedMotionChanged(event) {
       prefersReducedMotion = !!event.matches;
+      cancelScheduledInputRender();
+      updateMotionModeNotes();
       if (rainPreview && typeof rainPreview.setReducedMotion === "function") {
         rainPreview.setReducedMotion(prefersReducedMotion);
+      }
+      if (conditionalViz && typeof conditionalViz.setReducedMotion === "function") {
+        conditionalViz.setReducedMotion(prefersReducedMotion);
       }
       replay.lock = false;
       if (replay.mode === "playing") {
@@ -515,6 +635,7 @@
         reduceMotionQuery.addListener(onReducedMotionChanged);
       }
     }
+    updateMotionModeNotes();
 
     function xFromProbability(probability) {
       return clamp01(probability) * particleWidth;
@@ -950,10 +1071,55 @@
     }
 
     function setThresholdVisual() {
-      root.style.setProperty("--rain-threshold", percent(DECISION_THRESHOLD));
+      root.style.setProperty("--rain-threshold", percent(decisionState.threshold));
       if (decisionThresholdReadout) {
-        decisionThresholdReadout.textContent = "Action threshold: " + percent(DECISION_THRESHOLD);
+        var suffix = decisionState.useCostThreshold ? " (cost mode)" : "";
+        decisionThresholdReadout.textContent = "Action threshold: " + percent(decisionState.threshold) + suffix;
       }
+      if (decisionThresholdSlider) {
+        decisionThresholdSlider.value = fixed(decisionState.threshold, 2);
+      }
+      if (decisionThresholdValue) {
+        decisionThresholdValue.textContent = percent(decisionState.threshold);
+      }
+      if (decisionUseCosts) {
+        decisionUseCosts.checked = !!decisionState.useCostThreshold;
+      }
+      if (costFalsePositive) {
+        costFalsePositive.value = fixed(decisionState.falsePositiveCost, 1);
+      }
+      if (costFalsePositiveValue) {
+        costFalsePositiveValue.textContent = fixed(decisionState.falsePositiveCost, 1);
+      }
+      if (costFalseNegative) {
+        costFalseNegative.value = fixed(decisionState.falseNegativeCost, 1);
+      }
+      if (costFalseNegativeValue) {
+        costFalseNegativeValue.textContent = fixed(decisionState.falseNegativeCost, 1);
+      }
+    }
+
+    function refreshThresholdFromCosts() {
+      if (!decisionState.useCostThreshold) {
+        return;
+      }
+      var cfp = Math.max(0.1, decisionState.falsePositiveCost);
+      var cfn = Math.max(0.1, decisionState.falseNegativeCost);
+      decisionState.threshold = clamp01(cfp / (cfp + cfn));
+    }
+
+    function updateLossReadout(model) {
+      if (!decisionLossReadout) {
+        return;
+      }
+      var p = clamp01(model.posterior);
+      var umbrellaLoss = decisionState.falsePositiveCost * (1 - p);
+      var noUmbrellaLoss = decisionState.falseNegativeCost * p;
+      decisionLossReadout.textContent =
+        "Expected loss (umbrella/no umbrella): " +
+        fixed(umbrellaLoss, 2) +
+        " / " +
+        fixed(noUmbrellaLoss, 2);
     }
 
     function cancelReplay(reason, options) {
@@ -973,6 +1139,20 @@
 
       if (!opts.keepProgress) {
         setReplayProgress(0);
+      }
+
+      if (!opts.keepVisualState && conditionalViz && conditionalReplayControlled) {
+        conditionalReplayControlled = false;
+        if (typeof conditionalViz.setHighlightedEvent === "function") {
+          conditionalViz.setHighlightedEvent(null);
+        }
+        if (typeof conditionalViz.setPerspective === "function") {
+          conditionalViz.setPerspective(conditionalUserPerspective, {
+            animate: !prefersReducedMotion,
+            source: "engine",
+            mode: "direct"
+          });
+        }
       }
 
       setActiveReplayStepButton(replay.step);
@@ -1076,11 +1256,8 @@
 
     var DecisionViz = {
       setThreshold: function (value) {
-        var threshold = clamp01(value);
-        root.style.setProperty("--rain-threshold", percent(threshold));
-        if (decisionThresholdReadout) {
-          decisionThresholdReadout.textContent = "Action threshold: " + percent(threshold);
-        }
+        decisionState.threshold = clamp01(value);
+        setThresholdVisual();
       },
       flashThreshold: function () {
         if (!thresholdMarker) {
@@ -1096,7 +1273,7 @@
           return;
         }
         var opts = options || {};
-        var takeUmbrella = posterior >= DECISION_THRESHOLD;
+        var takeUmbrella = posterior >= decisionState.threshold;
         decisionText.textContent = takeUmbrella ? "Take umbrella" : "No umbrella";
         decisionText.classList.toggle("decision-go", takeUmbrella);
         decisionText.classList.toggle("decision-hold", !takeUmbrella);
@@ -1153,6 +1330,9 @@
 
       CurvesViz.setHighlight(null);
       DecisionViz.setNeutral();
+      if (conditionalViz) {
+        conditionalReplayControlled = true;
+      }
 
       if (replayStep === 1) {
         CurvesViz.setVisibility({
@@ -1164,6 +1344,14 @@
         });
         GaugesViz.update(model, { hidePosterior: true });
         ParticlesViz.setStaticPrior(model.prior);
+        if (conditionalViz) {
+          if (typeof conditionalViz.setPerspective === "function") {
+            conditionalViz.setPerspective("universe", { animate: shouldAnimate, source: "replay", mode: "direct" });
+          }
+          if (typeof conditionalViz.setHighlightedEvent === "function") {
+            conditionalViz.setHighlightedEvent("rain");
+          }
+        }
         summary.textContent = "Step 1/4: Start with your prior belief before testimony.";
         return;
       }
@@ -1179,6 +1367,14 @@
         CurvesViz.setHighlight("likelihood");
         GaugesViz.update(model, { hidePosterior: true });
         ParticlesViz.setStaticPrior(model.prior);
+        if (conditionalViz) {
+          if (typeof conditionalViz.setPerspective === "function") {
+            conditionalViz.setPerspective("universe", { animate: shouldAnimate, source: "replay", mode: "direct" });
+          }
+          if (typeof conditionalViz.setHighlightedEvent === "function") {
+            conditionalViz.setHighlightedEvent("testimony");
+          }
+        }
         summary.textContent = "Step 2/4: Highlight testimony as a reliability-weighted signal.";
         return;
       }
@@ -1199,8 +1395,17 @@
           animate: shouldAnimate,
           durationMs: profile.particleDriftMs
         });
+        resolvePrediction(model);
         pulseRainPreview("replay", model.prior, model.posterior);
-        summary.textContent = "Step 3/4: Bayes forces an updated posterior from prior and testimony.";
+        if (conditionalViz) {
+          if (typeof conditionalViz.setPerspective === "function") {
+            conditionalViz.setPerspective("testimony", { animate: shouldAnimate, source: "replay", mode: "staged" });
+          }
+          if (typeof conditionalViz.setHighlightedEvent === "function") {
+            conditionalViz.setHighlightedEvent("testimony");
+          }
+        }
+        summary.textContent = "Step 3/4: Bayes forces an updated posterior from prior and testimony. Now we are only counting testimony-positive days.";
         return;
       }
 
@@ -1222,6 +1427,14 @@
       });
       DecisionViz.setDecisionState(model.posterior, { emphasize: true });
       DecisionViz.flashThreshold();
+      if (conditionalViz) {
+        if (typeof conditionalViz.setPerspective === "function") {
+          conditionalViz.setPerspective("testimony", { animate: false, source: "replay", mode: "direct" });
+        }
+        if (typeof conditionalViz.setHighlightedEvent === "function") {
+          conditionalViz.setHighlightedEvent(null);
+        }
+      }
       summary.textContent = "Step 4/4: Compare posterior to threshold and choose the action.";
     }
 
@@ -1246,8 +1459,9 @@
       applyReplayStep(replay.step, { animated: !prefersReducedMotion });
     }
 
+    refreshThresholdFromCosts();
     setThresholdVisual();
-    DecisionViz.setThreshold(DECISION_THRESHOLD);
+    DecisionViz.setThreshold(decisionState.threshold);
 
     function syncSliders() {
       priorSlider.value = fixed(state.prior, 2);
@@ -1255,8 +1469,139 @@
       falseSlider.value = fixed(state.tGivenNotR, 2);
     }
 
-    function isGuessMode() {
-      return guessFirst && guessFirst.checked;
+    function predictionLabel(kind) {
+      if (kind === "lower") {
+        return "lower";
+      }
+      if (kind === "higher") {
+        return "higher";
+      }
+      return "about the same";
+    }
+
+    function classifyPosteriorShift(model) {
+      var delta = Number(model.posterior) - Number(model.prior);
+      if (delta > PREDICTION_SAME_DELTA) {
+        return "higher";
+      }
+      if (delta < -PREDICTION_SAME_DELTA) {
+        return "lower";
+      }
+      return "same";
+    }
+
+    function setPredictionFeedbackMessage(message, statusClass) {
+      if (!predictionFeedback) {
+        return;
+      }
+      predictionFeedback.textContent = message || "";
+      predictionFeedback.classList.remove("is-correct");
+      predictionFeedback.classList.remove("is-incorrect");
+      if (statusClass) {
+        predictionFeedback.classList.add(statusClass);
+      }
+    }
+
+    function syncPredictionButtons() {
+      predictionButtons.forEach(function (button) {
+        var value = button.getAttribute("data-predict");
+        var selected = value === predictionChoice;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+      });
+    }
+
+    function markPredictionPending() {
+      if (!predictionChoice) {
+        setPredictionFeedbackMessage("", null);
+        return;
+      }
+      setPredictionFeedbackMessage("Prediction saved. Commit an update to check it.", null);
+    }
+
+    function resolvePrediction(model) {
+      if (!predictionChoice) {
+        return;
+      }
+
+      var actual = classifyPosteriorShift(model);
+      var correct = predictionChoice === actual;
+      var relation = actual === "same" ? "about the same as" : actual + " than";
+      var message = "You predicted " + predictionLabel(predictionChoice) + "; posterior is " + relation + " prior.";
+      setPredictionFeedbackMessage(message, correct ? "is-correct" : "is-incorrect");
+    }
+
+    function getSerializableState() {
+      return {
+        prior: state.prior,
+        tGivenR: state.tGivenR,
+        tGivenNotR: state.tGivenNotR,
+        decisionThreshold: decisionState.threshold,
+        falsePositiveCost: decisionState.falsePositiveCost,
+        falseNegativeCost: decisionState.falseNegativeCost,
+        useCostThreshold: decisionState.useCostThreshold
+      };
+    }
+
+    function setCopyLinkStatus(message) {
+      if (copyLinkStatus) {
+        copyLinkStatus.textContent = message || "";
+      }
+      if (announcer && message) {
+        announcer.textContent = message;
+      }
+      if (copyLinkStatusTimer !== null) {
+        clearTimeout(copyLinkStatusTimer);
+      }
+      if (message) {
+        copyLinkStatusTimer = setTimeout(function () {
+          if (copyLinkStatus) {
+            copyLinkStatus.textContent = "";
+          }
+          copyLinkStatusTimer = null;
+        }, 1800);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      var textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      var copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch (error) {
+        copied = false;
+      }
+
+      document.body.removeChild(textarea);
+      return copied;
+    }
+
+    function copyShareLink() {
+      writeHash(getSerializableState());
+      var url = window.location.href;
+      var hasClipboard = navigator.clipboard && typeof navigator.clipboard.writeText === "function";
+      var isSecureCopyContext = !!(window.isSecureContext || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+      if (hasClipboard && isSecureCopyContext) {
+        navigator.clipboard.writeText(url).then(function () {
+          setCopyLinkStatus("Link copied.");
+        }).catch(function () {
+          var copiedFallback = fallbackCopyText(url);
+          setCopyLinkStatus(copiedFallback ? "Link copied." : "Copy failed. Copy from address bar.");
+        });
+        return;
+      }
+
+      var copied = fallbackCopyText(url);
+      setCopyLinkStatus(copied ? "Link copied." : "Copy failed. Copy from address bar.");
     }
 
     function shouldPersistHash() {
@@ -1267,11 +1612,6 @@
       if (activePresetKey && !statesMatchPreset(state, window.RainModel.PRESETS[activePresetKey])) {
         activePresetKey = null;
       }
-    }
-
-    function updateIntuitionText(model) {
-      var move = deriveMoveLabel(model);
-      intuition.textContent = "Current update magnitude: " + move + ". Delta = " + percent(Math.abs(model.posterior - model.prior)) + ".";
     }
 
     function updateRainPreview(model) {
@@ -1323,30 +1663,28 @@
 
       priorBarValue.textContent = percent(model.prior);
       ptBarValue.textContent = percent(model.pTestimony);
-      posteriorBarValue.textContent = isGuessMode() ? "hidden" : percent(model.posterior);
+      posteriorBarValue.textContent = percent(model.posterior);
 
-      if (isGuessMode()) {
-        summary.textContent = "Guess-first mode is on. Predict whether testimony moves belief a lot or a little, then reveal.";
-      } else {
-        summary.textContent =
-          "Posterior rain chance after testimony: " + percent(model.posterior) +
-          " (prior " + percent(model.prior) + ", testimony event " + percent(model.pTestimony) + ").";
-      }
+      summary.textContent = "";
 
       advancedPt.textContent = fixed(model.pTestimony, 3);
       advancedNum.textContent = fixed(model.numerator, 3);
-      if (isGuessMode()) {
-        advancedPost.textContent = "hidden until reveal";
-        advancedEvidence.textContent = "hidden until reveal";
-        advancedKl.textContent = "hidden until reveal";
-      } else {
-        advancedPost.textContent = fixed(model.posterior, 3);
-        advancedEvidence.textContent = fixed(model.logEvidence, 3);
-        advancedKl.textContent = fixed(model.klUpdateCost, 3);
-      }
+      advancedPost.textContent = fixed(model.posterior, 3);
+      advancedEvidence.textContent = fixed(model.logEvidence, 3);
+      advancedKl.textContent = fixed(model.klUpdateCost, 3);
 
-      updateIntuitionText(model);
+      updateLossReadout(model);
       updateRainPreview(model);
+      if (conditionalViz && typeof conditionalViz.update === "function") {
+        conditionalViz.update({
+          prior: model.prior,
+          tGivenR: model.tGivenR,
+          tGivenNotR: model.tGivenNotR,
+          posterior: model.posterior,
+          replayStep: replay.step,
+          reducedMotion: prefersReducedMotion
+        });
+      }
       applyUnlock(root, unlockStep);
       updatePresetButtons(presetButtons, activePresetKey);
       updateParticles(model, {
@@ -1360,20 +1698,34 @@
       }
 
       if (opts.persistHash !== false && shouldPersistHash()) {
-        writeHash(model);
+        writeHash(getSerializableState());
       }
 
       if (opts.announce) {
-        if (isGuessMode()) {
-          announcePosterior("Guess-first mode is on. Posterior values are hidden until reveal.");
-        } else {
-          announcePosterior("Updated posterior rain chance: " + percent(model.posterior) + ".");
-        }
+        announcePosterior("Updated posterior rain chance: " + percent(model.posterior) + ".");
       }
+    }
+
+    function cancelScheduledInputRender() {
+      if (inputRenderRafId !== null) {
+        window.cancelAnimationFrame(inputRenderRafId);
+        inputRenderRafId = null;
+      }
+    }
+
+    function scheduleInputRender() {
+      if (inputRenderRafId !== null) {
+        return;
+      }
+      inputRenderRafId = window.requestAnimationFrame(function () {
+        inputRenderRafId = null;
+        render({ resampleParticles: false, animateParticles: false });
+      });
     }
 
     function setState(nextState, options) {
       var opts = options || {};
+      cancelScheduledInputRender();
 
       state = {
         prior: window.RainModel.clamp01(nextState.prior),
@@ -1413,15 +1765,18 @@
       cancelReplay("slider-input", { keepVisualState: false, keepProgress: false });
       state[key] = Number(value);
       updateActivePresetFromManualInput();
-      render({ resampleParticles: false, animateParticles: false });
+      markPredictionPending();
+      scheduleInputRender();
     }
 
     function onSliderCommit(key, value) {
       var previousPosterior = window.RainModel.deriveState(state).posterior;
+      cancelScheduledInputRender();
       cancelReplay("slider-commit", { keepVisualState: false, keepProgress: false });
       state[key] = Number(value);
       updateActivePresetFromManualInput();
       render({ announce: true, resampleParticles: true, animateParticles: true });
+      resolvePrediction(window.RainModel.deriveState(state));
       pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
     }
 
@@ -1449,6 +1804,7 @@
     presetButtons.forEach(function (button) {
       button.addEventListener("click", function () {
         var previousPosterior = window.RainModel.deriveState(state).posterior;
+        cancelScheduledInputRender();
         cancelReplay("preset", { keepVisualState: false, keepProgress: false });
         var presetKey = button.getAttribute("data-preset");
         var preset = window.RainModel.PRESETS[presetKey];
@@ -1469,32 +1825,89 @@
             animateParticles: true
           }
         );
+        resolvePrediction(window.RainModel.deriveState(state));
         pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
       });
     });
 
-    if (guessFirst) {
-      guessFirst.addEventListener("change", function () {
-        cancelReplay("guess-toggle", { keepVisualState: false, keepProgress: false });
-        render({ announce: true });
+    if (decisionThresholdSlider) {
+      decisionThresholdSlider.addEventListener("input", function () {
+        cancelScheduledInputRender();
+        cancelReplay("threshold-input", { keepVisualState: false, keepProgress: false });
+        decisionState.useCostThreshold = false;
+        decisionState.threshold = clamp01(decisionThresholdSlider.value);
+        setThresholdVisual();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+      });
+      decisionThresholdSlider.addEventListener("change", function () {
+        cancelScheduledInputRender();
+        decisionState.useCostThreshold = false;
+        decisionState.threshold = clamp01(decisionThresholdSlider.value);
+        setThresholdVisual();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+        announcePosterior("Decision threshold set to " + percent(decisionState.threshold) + ".");
       });
     }
 
-    if (revealGuess) {
-      revealGuess.addEventListener("click", function () {
-        cancelReplay("guess-reveal", { keepVisualState: false, keepProgress: false });
-        if (guessFirst) {
-          guessFirst.checked = false;
+    if (decisionUseCosts) {
+      decisionUseCosts.addEventListener("change", function () {
+        cancelScheduledInputRender();
+        cancelReplay("cost-toggle", { keepVisualState: false, keepProgress: false });
+        decisionState.useCostThreshold = !!decisionUseCosts.checked;
+        refreshThresholdFromCosts();
+        setThresholdVisual();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+        announcePosterior("Cost-based threshold " + (decisionState.useCostThreshold ? "enabled" : "disabled") + ".");
+      });
+    }
+
+    if (costFalsePositive) {
+      costFalsePositive.addEventListener("input", function () {
+        cancelScheduledInputRender();
+        cancelReplay("cost-input", { keepVisualState: false, keepProgress: false });
+        decisionState.falsePositiveCost = Math.max(0.1, Number(costFalsePositive.value));
+        if (decisionState.useCostThreshold) {
+          refreshThresholdFromCosts();
         }
-        render({ announce: true });
+        setThresholdVisual();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+      });
+      costFalsePositive.addEventListener("change", function () {
+        cancelScheduledInputRender();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+        announcePosterior("Costs updated.");
+      });
+    }
+
+    if (costFalseNegative) {
+      costFalseNegative.addEventListener("input", function () {
+        cancelScheduledInputRender();
+        cancelReplay("cost-input", { keepVisualState: false, keepProgress: false });
+        decisionState.falseNegativeCost = Math.max(0.1, Number(costFalseNegative.value));
+        if (decisionState.useCostThreshold) {
+          refreshThresholdFromCosts();
+        }
+        setThresholdVisual();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+      });
+      costFalseNegative.addEventListener("change", function () {
+        cancelScheduledInputRender();
+        render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
+        announcePosterior("Costs updated.");
       });
     }
 
     if (resetButton) {
       resetButton.addEventListener("click", function () {
         var previousPosterior = window.RainModel.deriveState(state).posterior;
+        cancelScheduledInputRender();
         cancelReplay("reset", { keepVisualState: false, keepProgress: false });
         var preset = window.RainModel.PRESETS.canonical;
+        decisionState.threshold = DEFAULT_DECISION_THRESHOLD;
+        decisionState.useCostThreshold = false;
+        decisionState.falsePositiveCost = DEFAULT_FALSE_POSITIVE_COST;
+        decisionState.falseNegativeCost = DEFAULT_FALSE_NEGATIVE_COST;
+        setThresholdVisual();
         setState(
           {
             prior: preset.prior,
@@ -1508,18 +1921,38 @@
             animateParticles: true
           }
         );
+        resolvePrediction(window.RainModel.deriveState(state));
         pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
+      });
+    }
+
+    predictionButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        cancelScheduledInputRender();
+        cancelReplay("prediction-choice", { keepVisualState: false, keepProgress: false });
+        predictionChoice = button.getAttribute("data-predict");
+        syncPredictionButtons();
+        markPredictionPending();
+      });
+    });
+
+    if (copyLinkButton) {
+      copyLinkButton.addEventListener("click", function () {
+        cancelScheduledInputRender();
+        copyShareLink();
       });
     }
 
     if (replayPlay) {
       replayPlay.addEventListener("click", function () {
+        cancelScheduledInputRender();
         startReplay();
       });
     }
 
     if (replayPrev) {
       replayPrev.addEventListener("click", function () {
+        cancelScheduledInputRender();
         var current = replay.step === null ? 1 : replay.step;
         jumpToReplayStep(current - 1);
       });
@@ -1527,6 +1960,7 @@
 
     if (replayNext) {
       replayNext.addEventListener("click", function () {
+        cancelScheduledInputRender();
         var current = replay.step === null ? 1 : replay.step;
         jumpToReplayStep(current + 1);
       });
@@ -1534,6 +1968,7 @@
 
     replayStepButtons.forEach(function (button) {
       button.addEventListener("click", function () {
+        cancelScheduledInputRender();
         jumpToReplayStep(Number(button.getAttribute("data-replay-step")));
       });
     });
@@ -1541,21 +1976,29 @@
     root.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && replay.mode === "playing") {
         event.preventDefault();
+        cancelScheduledInputRender();
         cancelReplay("escape", { keepVisualState: false, keepProgress: false });
         render({ persistHash: false, resampleParticles: false, animateParticles: false });
       }
     });
 
     window.addEventListener("beforeunload", function () {
+      cancelScheduledInputRender();
       if (rainPreview && typeof rainPreview.destroy === "function") {
         rainPreview.destroy();
       }
       rainPreview = null;
+      if (conditionalViz && typeof conditionalViz.destroy === "function") {
+        conditionalViz.destroy();
+      }
+      conditionalViz = null;
     });
 
     bindUnlocking(setUnlockStep);
 
     syncSliders();
+    syncPredictionButtons();
+    markPredictionPending();
     setActiveReplayStepButton(null);
     setReplayProgress(0);
     setReplayPlayLabel();

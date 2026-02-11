@@ -1,10 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>How to Change Your Mind | The Last Assumption</title>
+  <meta name="description" content="An interactive edition of The Last Assumption chapter on Bayesian belief-updating under testimony. Learn how to update your beliefs using Bayes' theorem.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://rishistyping.github.io/bayesian-optimization/">
+  <meta property="og:title" content="How to Change Your Mind | The Last Assumption">
+  <meta property="og:description" content="An interactive edition of The Last Assumption chapter on Bayesian belief-updating under testimony.">
+  <meta property="og:image" content="https://rishistyping.github.io/bayesian-optimization/thumbnail.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://rishistyping.github.io/bayesian-optimization/">
+  <meta property="twitter:title" content="How to Change Your Mind | The Last Assumption">
+  <meta property="twitter:description" content="An interactive edition of The Last Assumption chapter on Bayesian belief-updating under testimony.">
+  <meta property="twitter:image" content="https://rishistyping.github.io/bayesian-optimization/thumbnail.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="thumbnail.png">
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://rishistyping.github.io/bayesian-optimization/">
+  
   <script defer src="js/template.v2.js"></script>
   <link rel="stylesheet" type="text/css" href="css/styles.css">
   <link rel="stylesheet" type="text/css" href="css/rain.css">
@@ -12,10 +34,12 @@
   <script defer src="js/vendor/d3.v7.min.js"></script>
   <script defer src="js/rain/rain_model.js"></script>
   <script defer src="js/rain/rain_preview_d3.js"></script>
+  <script defer src="js/rain/rain_conditional_d3.js"></script>
   <script defer src="js/rain/rain_engine.js"></script>
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <d-front-matter>
     <script id='distill-front-matter' type="text/json">
@@ -55,7 +79,7 @@
 
   <d-byline></d-byline>
 
-  <d-article style="overflow-x: unset;">
+  <d-article id="main-content" style="overflow-x: unset;">
     <nav class="chapter-contents" aria-label="Chapter contents">
       <p class="chapter-contents-label">Chapter Contents</p>
       <p class="chapter-contents-chapter">Chapter 8 · How to Change Your Mind</p>
@@ -63,8 +87,8 @@
         <li><a href="#section-prior" data-contents-link>Start with what you believed before testimony</a></li>
         <li><a href="#section-channel" data-contents-link>Testimony as a channel</a></li>
         <li><a href="#section-forced" data-contents-link>Forced update</a></li>
+        <li><a href="#section-conditional" data-contents-link>Conditional perspective</a></li>
         <li><a href="#section-playground" data-contents-link>Why We Fail</a></li>
-        <li><a href="#section-bridge" data-contents-link>Techniques for Better Updating</a></li>
       </ol>
     </nav>
 
@@ -89,6 +113,27 @@
       <p>
         Testimony is a channel too. It depends on how often a person is right when it rains, and how often they cry rain when it doesn't. Those two numbers determine how informative testimony is.
       </p>
+
+      <div id="channel-techniques" class="story-subsection is-story-locked" data-story-step="5" aria-disabled="true">
+        <h2>Techniques for Better Updating</h2>
+        <div class="channel-bridge" aria-label="Channel model: signal to reliability to Bayesian update">
+          <div class="bridge-node">Signal</div>
+          <div class="bridge-arrow" aria-hidden="true"></div>
+          <div class="bridge-node">Reliability</div>
+          <div class="bridge-arrow" aria-hidden="true"></div>
+          <div class="bridge-node">Update</div>
+          <span class="bridge-pulse" aria-hidden="true"></span>
+        </div>
+        <div class="story-subsection-content" hidden aria-hidden="true">
+          <p>
+            This is the channel model: signal, reliability, update. Perception, memory, and testimony differ in reliability, but the update rule is the same.
+          </p>
+
+          <p>
+            In this explorable, the signal is "friend says rain," reliability is <d-math>P(T|R)</d-math> and <d-math>P(T|\neg R)</d-math>, and the update is Bayes.
+          </p>
+        </div>
+      </div>
     </section>
 
     <section id="section-forced" class="story-section" data-unlock-step="3">
@@ -105,14 +150,17 @@
 
       <figure class="rain-figure">
         <d-figure id="rain-engine" class="rain-engine" aria-labelledby="rain-engine-title">
-          <figcaption id="rain-engine-title">
-            From prior belief to updated belief after testimony
-          </figcaption>
+          <figcaption id="rain-engine-title">Rain belief update</figcaption>
+
+          <div id="engine-loading" class="engine-loading">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p>Loading interactive visualization...</p>
+          </div>
 
           <div class="engine-shell">
-            <p id="controls-locked-note" class="sr-only">This control is locked until later in the story.</p>
             <p id="posterior-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
             <p id="posterior-live" class="engine-summary"></p>
+            <p id="engine-motion-note" class="motion-mode-note" role="status" aria-live="polite" hidden></p>
             <p id="testimony-strip" class="event-strip">Friend says: "raining."</p>
 
             <div class="replay-panel" data-control="replay" data-step="3" role="region" aria-label="Replay stepper controls">
@@ -132,6 +180,16 @@
               <div class="replay-progress-track" aria-hidden="true">
                 <span id="replay-progress" class="replay-progress-fill"></span>
               </div>
+            </div>
+
+            <div class="prediction-panel" data-control="playground" data-step="3" role="group" aria-label="Prediction prompt">
+              <p class="prediction-label">Predict first: after testimony, will posterior be lower, about the same, or higher than prior?</p>
+              <div class="prediction-buttons">
+                <button type="button" class="prediction-btn" data-predict="lower">Lower</button>
+                <button type="button" class="prediction-btn" data-predict="same">About the same</button>
+                <button type="button" class="prediction-btn" data-predict="higher">Higher</button>
+              </div>
+              <p id="prediction-feedback" class="prediction-feedback" aria-live="polite" aria-atomic="true"></p>
             </div>
 
             <div class="engine-viz-layout">
@@ -169,6 +227,30 @@
                       <path d="M3 12a9 9 0 0 1 18 0h-2a2 2 0 0 0-2 2 2 2 0 0 1-4 0 2 2 0 0 0-4 0 2 2 0 0 1-4 0 2 2 0 0 0-2-2H3zm8 0h2v6a2 2 0 1 1-4 0h2a1 1 0 0 0 2 0v-6z"></path>
                     </svg>
                   </span>
+                  <div class="decision-controls">
+                    <label for="decision-threshold-slider" class="decision-slider-label">
+                      Action threshold θ
+                      <output id="decision-threshold-value" for="decision-threshold-slider">60.0%</output>
+                    </label>
+                    <input id="decision-threshold-slider" type="range" min="0.05" max="0.95" step="0.01" value="0.60" aria-label="Action threshold for taking umbrella" />
+                    <label class="decision-cost-toggle" for="decision-use-costs">
+                      <input id="decision-use-costs" type="checkbox" />
+                      Use cost-based threshold
+                    </label>
+                    <div class="decision-cost-grid">
+                      <label for="cost-false-positive">
+                        False positive cost
+                        <output id="cost-false-positive-value" for="cost-false-positive">1.0</output>
+                      </label>
+                      <input id="cost-false-positive" type="range" min="0.1" max="5" step="0.1" value="1.0" aria-label="Cost of taking umbrella when it is not raining" />
+                      <label for="cost-false-negative">
+                        False negative cost
+                        <output id="cost-false-negative-value" for="cost-false-negative">1.0</output>
+                      </label>
+                      <input id="cost-false-negative" type="range" min="0.1" max="5" step="0.1" value="1.0" aria-label="Cost of not taking umbrella when it is raining" />
+                    </div>
+                    <p id="decision-loss-readout" class="decision-loss-readout">Expected loss (umbrella/no umbrella): -- / --</p>
+                  </div>
                 </div>
               </div>
 
@@ -208,15 +290,6 @@
               <button type="button" id="reset-state">Reset</button>
             </div>
 
-            <div class="guess-row" data-control="playground" data-step="4">
-              <label for="guess-first">
-                <input type="checkbox" id="guess-first" /> Guess first (hide posterior numbers)
-              </label>
-              <button type="button" id="reveal-guess">Reveal numbers</button>
-              <p id="intuition-feedback"></p>
-              <p class="share-note">URL hash updates as you move sliders so you can share a state.</p>
-            </div>
-
             <button type="button" class="collapsible" id="advanced-toggle" data-control="advanced" data-step="3" aria-expanded="false">
               <span>Advanced</span>
               <span class="collapsible-indicator" aria-hidden="true"></span>
@@ -238,6 +311,65 @@
       </figure>
     </section>
 
+    <section id="section-conditional" class="story-section conditional-section" data-unlock-step="3">
+      <h1>Conditional perspective</h1>
+      <p>
+        Conditional probability means we shrink attention to a subset of days. In <strong>Given testimony</strong>,
+        the denominator is only days where testimony says rain.
+      </p>
+      <p>
+        Posterior is the rainy share inside that testimony subset. Use the three sliders above; this view updates live.
+      </p>
+
+      <figure class="conditional-figure">
+        <d-figure id="conditional-probability-panel" class="cp-card" aria-labelledby="cp-title">
+          <figcaption id="cp-title">How conditioning shrinks the sample space</figcaption>
+          <div class="cp-layout">
+            <div class="cp-top-controls">
+              <div class="cp-tabs" role="tablist" aria-label="Conditional perspectives">
+                <button type="button" id="cp-tab-universe" class="cp-tab" data-cp-perspective="universe" role="tab" aria-controls="cp-viz" aria-selected="true">Universe</button>
+                <button type="button" id="cp-tab-rain" class="cp-tab" data-cp-perspective="rain" role="tab" aria-controls="cp-viz" aria-selected="false">Given rain</button>
+                <button type="button" id="cp-tab-testimony" class="cp-tab" data-cp-perspective="testimony" role="tab" aria-controls="cp-viz" aria-selected="false">Given testimony</button>
+                <button type="button" id="cp-tab-not-rain" class="cp-tab" data-cp-perspective="not_rain" role="tab" aria-controls="cp-viz" aria-selected="false">Given not rain</button>
+              </div>
+            </div>
+
+            <div id="cp-viz" class="cp-viz" role="tabpanel" aria-labelledby="cp-tab-universe"></div>
+
+            <div class="cp-bottom-readout">
+              <p id="cp-formula" class="cp-formula">P(R|T) = P(R∩T) / P(T)</p>
+              <p class="cp-helper-line">First isolate days where testimony says rain, then renormalize that subset to 100%.</p>
+              <div class="cp-prob-bars" aria-live="polite" aria-atomic="true">
+                <p id="cp-perspective-title" class="cp-perspective-title">Current perspective: Universe</p>
+                <div class="cp-prob-row">
+                  <span id="cp-prob-rain-label" class="cp-prob-label">P(R|U)</span>
+                  <div class="cp-prob-track"><span id="cp-prob-rain-fill" class="cp-prob-fill cp-prob-fill--rain"></span></div>
+                  <span id="cp-prob-rain-value" class="cp-prob-value">--</span>
+                </div>
+                <div class="cp-prob-row">
+                  <span id="cp-prob-testimony-label" class="cp-prob-label">P(T|U)</span>
+                  <div class="cp-prob-track"><span id="cp-prob-testimony-fill" class="cp-prob-fill cp-prob-fill--testimony"></span></div>
+                  <span id="cp-prob-testimony-value" class="cp-prob-value">--</span>
+                </div>
+                <div class="cp-prob-row">
+                  <span id="cp-prob-not-rain-label" class="cp-prob-label">P(¬R|U)</span>
+                  <div class="cp-prob-track"><span id="cp-prob-not-rain-fill" class="cp-prob-fill cp-prob-fill--not-rain"></span></div>
+                  <span id="cp-prob-not-rain-value" class="cp-prob-value">--</span>
+                </div>
+              </div>
+              <div class="cp-sim-controls" role="group" aria-label="Monte Carlo drop simulation controls">
+                <button type="button" id="cp-sim-start">Start</button>
+                <button type="button" id="cp-sim-stop">Stop</button>
+                <span id="cp-sim-status" class="cp-sim-status" aria-live="polite"></span>
+              </div>
+              <p id="cp-motion-note" class="cp-motion-note" role="status" aria-live="polite" hidden></p>
+              <p id="cp-fallback" class="cp-fallback" hidden>D3 is unavailable. Conditional sample-space animation is disabled.</p>
+            </div>
+          </div>
+        </d-figure>
+      </figure>
+    </section>
+
     <section id="section-playground" class="story-section" data-unlock-step="4">
       <h1>Why We Fail</h1>
       <p>
@@ -251,40 +383,34 @@
       </p>
     </section>
 
-    <section id="section-bridge" class="story-section" data-unlock-step="5">
-      <h1>Techniques for Better Updating</h1>
-      <p>
-        This is the channel model: signal, reliability, update. Perception, memory, and testimony differ in reliability, but the update rule is the same.
-      </p>
-
-      <div class="channel-bridge" aria-label="Channel model: signal to reliability to Bayesian update">
-        <div class="bridge-node">Signal</div>
-        <div class="bridge-arrow" aria-hidden="true"></div>
-        <div class="bridge-node">Reliability</div>
-        <div class="bridge-arrow" aria-hidden="true"></div>
-        <div class="bridge-node">Update</div>
-        <span class="bridge-pulse" aria-hidden="true"></span>
-      </div>
-
-      <p>
-        In this explorable, the signal is "friend says rain," reliability is <d-math>P(T|R)</d-math> and <d-math>P(T|\neg R)</d-math>, and the update is Bayes.
-      </p>
-    </section>
+    <div id="unlock-step-5-sentinel" class="unlock-step-sentinel" data-unlock-step="5" aria-hidden="true"></div>
 
     <nav class="chapter-nav" aria-label="Chapter navigation">
-      <a class="chapter-nav-link chapter-nav-prev" href="/chapters/07-maximum-entropy.html" rel="prev">
-        <span class="chapter-nav-meta">← Previous chapter</span>
+      <!-- Chapter links hidden until chapters are available -->
+      <span class="chapter-nav-link chapter-nav-prev chapter-nav-disabled" aria-disabled="true">
+        <span class="chapter-nav-meta">Chapter 7</span>
         <span class="chapter-nav-title">Maximum Entropy</span>
-      </a>
-      <a class="chapter-nav-link chapter-nav-toc" href="/chapters/index.html">
-        <span class="chapter-nav-meta">Browse</span>
-        <span class="chapter-nav-title">Table of Contents</span>
-      </a>
-      <a class="chapter-nav-link chapter-nav-next" href="/chapters/09-humes-ghost.html" rel="next">
-        <span class="chapter-nav-meta">Next chapter →</span>
+      </span>
+      <span class="chapter-nav-link chapter-nav-toc chapter-nav-disabled" aria-disabled="true">
+        <span class="chapter-nav-meta">From</span>
+        <span class="chapter-nav-title">The Last Assumption</span>
+      </span>
+      <span class="chapter-nav-link chapter-nav-next chapter-nav-disabled" aria-disabled="true">
+        <span class="chapter-nav-meta">Chapter 9</span>
         <span class="chapter-nav-title">Hume's Ghost</span>
-      </a>
+      </span>
     </nav>
+
+    <footer class="chapter-footer">
+      <div class="footer-content">
+        <p class="footer-citation">
+          From <em>The Last Assumption</em> by Emad Mostaque
+        </p>
+        <p class="footer-license">
+          Interactive adaptation · <a href="https://github.com/rishistyping/bayesian-optimization" target="_blank" rel="noopener">View on GitHub</a>
+        </p>
+      </div>
+    </footer>
   </d-article>
 
 </body>
