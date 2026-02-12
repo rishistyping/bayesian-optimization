@@ -29,6 +29,41 @@ If you skip any of these, requests become vague and implementation quality drops
 4. Keep the change scoped to the minimum required files.
 5. Run `npm run check` before commit/push.
 
+## Appendix metadata sections (Footnotes / References / Reuse / Citation)
+
+When a request touches scholarly metadata or legal/citation sections, be explicit:
+
+1. Keep bibliography sources in `public/` (for example `public/references.bib`).
+2. Use inline `d-cite`/`d-footnote` near the exact claim they support.
+3. Place appendix metadata blocks in `d-appendix` after `d-article`.
+4. Use stable heading IDs:
+   `updates-and-corrections`, `reuse`, `citation`.
+5. Keep legal language explicit and policy-safe (do not imply permissive reuse unless explicitly intended).
+
+Use this request pattern:
+
+```md
+Goal
+
+- Add/adjust Distill-style appendix metadata sections.
+
+In scope
+
+- `public/index.html` (d-cite/d-footnote/d-appendix)
+- `public/references.bib` (or existing bibliography source)
+
+Out of scope
+
+- No changes to model math, replay logic, or state/hash behavior.
+
+Acceptance criteria
+
+1. Footnotes and References render.
+2. Updates/Corrections, Reuse, and Citation sections appear in appendix.
+3. All citation keys resolve.
+4. Runtime behavior remains unchanged.
+```
+
 ## Request template (natural language, but precise)
 
 Copy/paste this and fill in the brackets:

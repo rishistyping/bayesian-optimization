@@ -1,4 +1,41 @@
+@font-face {
+  font-family: "Avenir Next";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/avenir-next/AvenirNextLTPro-Regular.woff2") format("woff2"),
+    url("../fonts/avenir-next/AvenirNextLTPro-Regular.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/avenir-next/AvenirNextLTPro-Bold.woff2") format("woff2"),
+    url("../fonts/avenir-next/AvenirNextLTPro-Bold.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/avenir-next/AvenirNextLTPro-It.woff2") format("woff2"),
+    url("../fonts/avenir-next/AvenirNextLTPro-It.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Avenir Next";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/avenir-next/AvenirNextLTPro-BoldIt.woff2") format("woff2"),
+    url("../fonts/avenir-next/AvenirNextLTPro-BoldIt.otf") format("opentype");
+}
+
 :root {
+  --tla-font-primary: "Avenir Next", "Avenir", "Helvetica Neue", "Arial", sans-serif;
   --tla-bg: #f6f8fb;
   --tla-panel: #ffffff;
   --tla-text: #1f2b35;
@@ -9,12 +46,14 @@
   --ref-note-width: 15rem;
   --ref-note-gap: 0rem;
   --gd-cursor-size: 24px;
-  --gd-cursor-bg: rgba(31, 43, 53, 0.1);
-  --gd-cursor-border: #163a53;
-  --gd-cursor-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 6px 16px rgba(10, 24, 36, 0.18);
-  --gd-cursor-label-bg: rgba(255, 255, 255, 0.94);
-  --gd-cursor-label-border: rgba(22, 45, 65, 0.24);
-  --gd-cursor-label-text: #1f2b35;
+  --gd-cursor-bg: rgba(166, 255, 255, 0.22);
+  --gd-cursor-border: #49d7eb;
+  --gd-cursor-shadow: 0 0 0 1px rgba(255, 255, 255, 0.62), 0 0 10px rgba(73, 215, 235, 0.3);
+  --gd-cursor-label-bg: rgba(238, 252, 255, 0.96);
+  --gd-cursor-label-border: rgba(73, 215, 235, 0.5);
+  --gd-cursor-label-text: #0f3a4f;
+  --tla-scrollbar-thumb: #49d7eb;
+  --tla-scrollbar-track: #dcecf2;
 }
 
 
@@ -89,12 +128,38 @@ html[data-theme="dark"] {
   --tla-link: #9defff;
   --tla-border: rgba(169, 187, 201, 0.3);
   --tla-accent: #a6ffff;
-  --gd-cursor-bg: rgba(166, 255, 255, 0.24);
-  --gd-cursor-border: #c9f9ff;
-  --gd-cursor-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 8px 22px rgba(0, 0, 0, 0.36);
+  --gd-cursor-bg: rgba(166, 255, 255, 0.28);
+  --gd-cursor-border: #a6ffff;
+  --gd-cursor-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 12px rgba(166, 255, 255, 0.35);
   --gd-cursor-label-bg: rgba(36, 44, 50, 0.95);
   --gd-cursor-label-border: rgba(166, 255, 255, 0.46);
   --gd-cursor-label-text: #e9f8fc;
+  --tla-scrollbar-thumb: #a6ffff;
+  --tla-scrollbar-track: #2b353d;
+}
+
+html {
+  scrollbar-color: var(--tla-scrollbar-thumb) var(--tla-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  height: 11px;
+  width: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--tla-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--tla-scrollbar-thumb);
+  border: 2px solid var(--tla-scrollbar-track);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--tla-scrollbar-thumb) 88%, #ffffff 12%);
 }
 
 .gd-cursor {
@@ -140,7 +205,7 @@ html[data-theme="dark"] {
   border: 1px solid var(--gd-cursor-label-border);
   border-radius: 999px;
   color: var(--gd-cursor-label-text);
-  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--tla-font-primary);
   font-size: 0.76rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -198,15 +263,27 @@ html[data-theme="dark"] {
   }
 }
 
+html,
 body {
   background: var(--tla-bg);
   color: var(--tla-text);
+  font-family: var(--tla-font-primary);
 }
 
 d-title,
 d-byline,
-d-article {
+d-article,
+d-appendix {
   color: var(--tla-text);
+  font-family: var(--tla-font-primary);
+}
+
+button,
+input,
+select,
+textarea,
+output {
+  font-family: var(--tla-font-primary);
 }
 
 d-byline {
@@ -552,7 +629,20 @@ html[data-theme="dark"] d-article b,
 html[data-theme="dark"] d-article blockquote,
 html[data-theme="dark"] d-article figcaption,
 html[data-theme="dark"] d-article label,
-html[data-theme="dark"] d-article output {
+html[data-theme="dark"] d-article output,
+html[data-theme="dark"] d-appendix,
+html[data-theme="dark"] d-appendix h3,
+html[data-theme="dark"] d-appendix p,
+html[data-theme="dark"] d-appendix li,
+html[data-theme="dark"] d-appendix strong,
+html[data-theme="dark"] d-appendix b,
+html[data-theme="dark"] d-appendix a,
+html[data-theme="dark"] d-footnote-list,
+html[data-theme="dark"] d-footnote-list h3,
+html[data-theme="dark"] d-footnote-list li,
+html[data-theme="dark"] d-citation-list,
+html[data-theme="dark"] d-citation-list h3,
+html[data-theme="dark"] d-citation-list li {
   color: #dce5eb !important;
 }
 
@@ -566,6 +656,22 @@ html[data-theme="dark"] d-math,
 html[data-theme="dark"] .math-inline,
 html[data-theme="dark"] .katex,
 html[data-theme="dark"] .katex * {
+  color: #dce5eb !important;
+}
+
+html[data-theme="dark"] d-appendix a,
+html[data-theme="dark"] d-footnote-list a,
+html[data-theme="dark"] d-citation-list a {
+  border-bottom-color: color-mix(in srgb, #dce5eb 44%, transparent) !important;
+  color: #9defff !important;
+}
+
+html[data-theme="dark"] d-appendix pre,
+html[data-theme="dark"] d-appendix pre.citation,
+html[data-theme="dark"] d-footnote-list pre,
+html[data-theme="dark"] d-citation-list pre {
+  background: #1b2329 !important;
+  border: 1px solid rgba(166, 185, 198, 0.3);
   color: #dce5eb !important;
 }
 

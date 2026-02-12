@@ -57,6 +57,11 @@ Layout changes must preserve this order and role separation:
 
 Do not convert primary prose into dashboard-style control walls. Keep narrative progression explicit.
 
+Appendix placement rule for this repo:
+
+- Use `d-appendix` immediately after `d-article` for metadata sections such as Footnotes, References, Updates and Corrections, Reuse, and Citation.
+- Keep bibliography assets publishable under `public/**` (for example `public/references.bib`).
+
 Source: `https://distill.pub/guide/`
 
 ## 6) Interactive Figure Placement Rules

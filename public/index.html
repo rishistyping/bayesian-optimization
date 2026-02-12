@@ -102,6 +102,9 @@
       </p>
       <p>
         How much should you believe them? Don't ask yes or no; ask how confident you should be.
+        <d-footnote id="fn-confidence-frame">
+          Bayesian updating treats confidence as a probability estimate, not a binary verdict.
+        </d-footnote>
       </p>
       <aside class="reference-note r-gutter-note" id="note-1" aria-label="Reference note 1">
         <p><strong>[1].</strong> Your prior is the base rate; Bayes updating starts from that baseline, not from zero.</p>
@@ -113,6 +116,7 @@
       </aside>
       <p>
         Start with your starting belief (base rate) before testimony. This can come from season, location, or recent weather.<a class="reference-note-marker" href="#note-1" aria-label="Read reference note 1">[1]</a>
+        <d-cite key="sep-bayes,ncbi-bayes-diagnosis"></d-cite>
       </p>
     </section>
 
@@ -131,6 +135,10 @@
       </aside>
       <p>
         Testimony is a channel too. It depends on how often a person is right when it rains, and how often they cry rain when it doesn't. Those two numbers determine how informative testimony is.<a class="reference-note-marker" href="#note-2" aria-label="Read reference note 2">[2]</a>
+        <d-cite key="ncbi-bayes-diagnosis,ncbi-likelihood-ratios,sep-testimony-epiprob"></d-cite>
+        <d-footnote id="fn-conditional-terms">
+          <d-math>P(T|R)</d-math> is not the same as <d-math>P(R|T)</d-math>; Bayes' rule is the bridge between them.
+        </d-footnote>
       </p>
 
       <div id="channel-techniques" class="story-subsection is-story-locked" data-story-step="5" aria-disabled="true">
@@ -173,6 +181,7 @@
         In the canonical setup, the posterior lands at 78.5% after testimony.
         Using symbols: <d-math>P(R)=0.30</d-math>, <d-math>P(T|R)=0.85</d-math>, <d-math>P(T|\neg R)=0.10</d-math>, so
         <d-math>P(R|T)=0.785</d-math>.<a class="reference-note-marker" href="#note-3" aria-label="Read reference note 3">[3]</a>
+        <d-cite key="sep-bayes,ncbi-bayes-diagnosis"></d-cite>
       </p>
 
       <figure class="rain-figure">
@@ -351,6 +360,10 @@
       <p>
         Conditional probability means we shrink attention to a subset of days. In <strong>Given testimony</strong>,
         the denominator is only days where testimony says rain.<a class="reference-note-marker" href="#note-4" aria-label="Read reference note 4">[4]</a>
+        <d-cite key="sep-bayes,ncbi-bayes-diagnosis"></d-cite>
+        <d-footnote id="fn-conditioning-subset">
+          Conditioning renormalizes probabilities inside the chosen subset so the total within that subset sums to 1.
+        </d-footnote>
       </p>
       <p>
         Posterior is the rainy share inside that testimony subset. Use the three sliders above; this view updates live.
@@ -417,6 +430,7 @@
       </aside>
       <p>
         Try presets and predict first: will testimony move belief a lot or a little? Reliable testimony shifts belief a lot; unreliable testimony moves it only a little.<a class="reference-note-marker" href="#note-5" aria-label="Read reference note 5">[5]</a>
+        <d-cite key="kahneman-tversky-1982,gigerenzer-hoffrage-1995"></d-cite>
       </p>
       <p>
         You don't jump to 85%. You don't stay at 30%. You land where both prior and evidence agree.
@@ -455,6 +469,36 @@
       </div>
     </footer>
   </d-article>
+
+  <d-bibliography src="references.bib"></d-bibliography>
+
+  <d-appendix>
+    <d-footnote-list></d-footnote-list>
+    <d-citation-list></d-citation-list>
+
+    <h3 id="updates-and-corrections">Updates and Corrections</h3>
+    <p>
+      If you see a mistake or want to suggest an improvement, please
+      <a href="https://github.com/rishistyping/bayesian-optimization/issues/new" target="_blank" rel="noopener">open an issue on GitHub</a>.
+    </p>
+
+    <h3 id="reuse">Reuse</h3>
+    <p>
+      All rights reserved unless otherwise noted. Reuse of figures, interactive code, or substantial text requires permission.
+    </p>
+
+    <h3 id="citation">Citation</h3>
+    <p>For attribution in academic contexts, please cite this work as:</p>
+    <pre class="citation short">Mostaque, E., "How to Change Your Mind", The Last Assumption: Interactive Edition, 2026.</pre>
+    <p>BibTeX citation</p>
+    <pre class="citation long">@misc{mostaque2026change,
+  title = {How to Change Your Mind},
+  author = {Mostaque, Emad},
+  year = {2026},
+  note = {The Last Assumption: Interactive Edition},
+  url = {https://rishistyping.github.io/bayesian-optimization/}
+}</pre>
+  </d-appendix>
 
 </body>
 
