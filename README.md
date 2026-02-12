@@ -1,6 +1,6 @@
 # How to Change Your Mind | The Last Assumption (Interactive Edition)
 
-Distill-style interactive chapter adaptation of _The Last Assumption_ Chapter 8 ("How to Change Your Mind").
+Interactive chapter adaptation of _The Last Assumption_ Chapter 8 ("How to Change Your Mind").
 
 ## Publish boundary
 
