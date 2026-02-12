@@ -31,6 +31,7 @@
   <link rel="stylesheet" type="text/css" href="css/styles.css">
   <link rel="stylesheet" type="text/css" href="css/rain.css">
   <script defer src="js/hider.js"></script>
+  <script defer src="js/header_raindrop_adapter.js"></script>
   <script defer src="js/cursor_interactions.js"></script>
   <script defer src="js/vendor/d3.v7.min.js"></script>
   <script defer src="js/rain/rain_model.js"></script>
@@ -69,6 +70,9 @@
   </d-front-matter>
 
   <d-title class="chapter-header" style="padding-bottom: 0">
+    <div class="chapter-header-fx" aria-hidden="true">
+      <canvas id="header-raindrop-canvas"></canvas>
+    </div>
     <p class="chapter-kicker">The Last Assumption</p>
     <h1>How to Change Your Mind</h1>
     <p class="chapter-subtitle">Interactive Edition</p>
@@ -83,9 +87,12 @@
   <d-byline></d-byline>
 
   <d-article id="main-content" style="overflow-x: unset;">
-    <nav class="chapter-contents" aria-label="Chapter contents">
+    <nav class="chapter-contents l-gutter" aria-label="Chapter contents">
       <p class="chapter-contents-label">Chapter Contents</p>
       <p class="chapter-contents-chapter">Chapter 8 · How to Change Your Mind</p>
+      <div class="chapter-contents-progress" aria-hidden="true">
+        <span id="chapter-contents-progress-fill" class="chapter-contents-progress-fill"></span>
+      </div>
       <ol class="chapter-contents-list">
         <li><a href="#section-prior" data-contents-link>Start with what you believed before testimony</a></li>
         <li><a href="#section-channel" data-contents-link>Testimony as a channel</a></li>

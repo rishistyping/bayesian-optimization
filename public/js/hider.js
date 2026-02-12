@@ -133,23 +133,40 @@
     });
   }
 
-  function setActiveContentsLink(links, activeId) {
+  function updateContentsProgress(progressFill, activeIndex, totalLinks) {
+    if (!progressFill) {
+      return;
+    }
+    var denominator = Math.max(1, totalLinks - 1);
+    var safeIndex = activeIndex >= 0 ? activeIndex : 0;
+    var progress = Math.max(0, Math.min(1, safeIndex / denominator));
+    progressFill.style.transformOrigin = "0 50%";
+    progressFill.style.transform = "scaleX(" + progress + ")";
+  }
+
+  function setActiveContentsLink(links, activeId, progressFill) {
+    var activeIndex = -1;
+
     links.forEach(function (link, index) {
       var href = link.getAttribute("href") || "";
       var targetId = href.charAt(0) === "#" ? href.slice(1) : "";
       var isActive = targetId && targetId === activeId;
       link.classList.toggle("is-active", isActive);
       if (isActive) {
+        activeIndex = index;
         link.setAttribute("aria-current", "true");
       } else {
         link.removeAttribute("aria-current");
       }
-
-      if (!activeId && index === 0) {
-        link.classList.add("is-active");
-        link.setAttribute("aria-current", "true");
-      }
     });
+
+    if (activeIndex < 0 && links.length > 0) {
+      links[0].classList.add("is-active");
+      links[0].setAttribute("aria-current", "true");
+      activeIndex = 0;
+    }
+
+    updateContentsProgress(progressFill, activeIndex, links.length);
   }
 
   function initChapterContents() {
@@ -162,6 +179,7 @@
     if (!links.length) {
       return;
     }
+    var progressFill = document.getElementById("chapter-contents-progress-fill");
 
     var sections = links
       .map(function (link) {
@@ -174,7 +192,7 @@
       .filter(Boolean);
 
     if (!sections.length) {
-      setActiveContentsLink(links, null);
+      setActiveContentsLink(links, null, progressFill);
       return;
     }
 
@@ -203,14 +221,14 @@
     }
 
     function updateActiveContents() {
-      setActiveContentsLink(links, pickActiveSectionId());
+      setActiveContentsLink(links, pickActiveSectionId(), progressFill);
     }
 
     var hash = window.location.hash;
     if (hash && hash.length > 1) {
-      setActiveContentsLink(links, hash.slice(1));
+      setActiveContentsLink(links, hash.slice(1), progressFill);
     } else {
-      setActiveContentsLink(links, sections[0].id);
+      setActiveContentsLink(links, sections[0].id, progressFill);
     }
 
     if (!("IntersectionObserver" in window)) {
@@ -235,7 +253,7 @@
       link.addEventListener("click", function () {
         var href = link.getAttribute("href") || "";
         if (href.charAt(0) === "#") {
-          setActiveContentsLink(links, href.slice(1));
+          setActiveContentsLink(links, href.slice(1), progressFill);
         }
       });
     });

@@ -627,7 +627,7 @@
     }
 
     function refreshRunningState() {
-      var shouldRun = !state.reducedMotion && state.runningRequested && state.pageVisible && state.inView && !state.transitionPaused;
+      var shouldRun = !state.reducedMotion && state.runningRequested && state.pageVisible && !state.transitionPaused;
       if (shouldRun) {
         startTimer();
       } else {

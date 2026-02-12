@@ -1224,10 +1224,39 @@ html[data-theme="dark"] #rain-engine p,
 html[data-theme="dark"] #rain-engine span,
 html[data-theme="dark"] #rain-engine label,
 html[data-theme="dark"] #rain-engine legend,
+html[data-theme="dark"] #rain-engine ul,
+html[data-theme="dark"] #rain-engine ol,
+html[data-theme="dark"] #rain-engine li,
 html[data-theme="dark"] #rain-engine strong,
 html[data-theme="dark"] #rain-engine button,
 html[data-theme="dark"] #rain-engine output {
   color: var(--rain-text);
+}
+
+html[data-theme="dark"] #rain-engine #advanced-math {
+  background: color-mix(in srgb, var(--rain-panel) 88%, #000 12%);
+  border-color: var(--rain-border);
+}
+
+html[data-theme="dark"] #rain-engine #advanced-math d-math,
+html[data-theme="dark"] #rain-engine #advanced-math .katex,
+html[data-theme="dark"] #rain-engine #advanced-math .katex * {
+  color: var(--rain-text) !important;
+}
+
+html[data-theme="dark"] #rain-engine #advanced-toggle {
+  background: color-mix(in srgb, var(--rain-button-bg) 82%, #000 18%);
+  border: 1px solid var(--rain-border);
+  color: var(--rain-text) !important;
+}
+
+html[data-theme="dark"] #rain-engine #advanced-toggle .collapsible-indicator::after,
+html[data-theme="dark"] #rain-engine #advanced-toggle span {
+  color: var(--rain-text) !important;
+}
+
+html[data-theme="dark"] #advanced-toggle.is-locked {
+  opacity: 0.72;
 }
 
 .bridge-node {
