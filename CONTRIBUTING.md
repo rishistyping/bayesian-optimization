@@ -12,6 +12,7 @@
 
 - Install dependencies:
   - `npm install`
+  - installs Git hook wiring for pre-push checks
 - Run local server:
   - `npm run dev`
 - Open:
@@ -21,5 +22,6 @@
 
 - Publish boundary is `public/**` only.
 - Keep prompts/notes/references/tools outside `public/`.
-- Follow `distill_context.md` and `AGENTS.md`.
+- Follow `design/design_context.md` and `AGENTS.md`.
 - Keep runtime changes offline-friendly and minimal.
+- Pre-push enforces `npm run check`; run it locally before pushing.

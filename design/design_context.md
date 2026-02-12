@@ -1,8 +1,11 @@
-# Distill Context for This Repo
+# Design Context for This Repo
+
+This is the combined design and interaction guideline document for this repository.
+It merges the previous `distill_context.md` canonical guidance and the `design_context.md` compatibility pointer into one source of truth.
 
 ## Purpose + Scope
 
-This is the canonical design and interaction guideline document for this repository. It captures how this project applies Distill authoring conventions and interactive-article practices while keeping a static, offline-friendly implementation.
+This document captures how this project applies Distill authoring conventions and interactive-article practices while keeping a static, offline-friendly implementation.
 
 Source: https://distill.pub/guide/
 

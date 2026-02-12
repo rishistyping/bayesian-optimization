@@ -25,12 +25,15 @@ Use local HTTP preview for full behavior parity with production browser policies
 
 1. Install dependencies:
    - `npm install`
+   - This also installs the repo pre-push hook (`npm run check` before push).
 2. Run local server:
    - `npm run dev`
 3. Run quality checks:
    - `npm run lint`
    - `npm run test`
    - `npm run check`
+4. Reinstall hooks manually if needed:
+   - `npm run setup:hooks`
 
 ## Repo layout
 
@@ -42,8 +45,8 @@ Use local HTTP preview for full behavior parity with production browser policies
 
 ## Guidance docs
 
-- Canonical Distill guidance for this repo: `distill_context.md`
-- Backward compatibility pointer: `design_context.md`
+- Canonical design guidance for this repo: `design/design_context.md`
+- Compatibility pointer: `design/distill_context.md`
 - Agent/developer operating rules: `AGENTS.md`
 - Contributor workflow: `CONTRIBUTING.md`
 - Scaffolding implementation notes: `notes/scaffolding_plan.md`
@@ -52,6 +55,6 @@ Use local HTTP preview for full behavior parity with production browser policies
 ## Adding a new chapter/page
 
 1. Add a new static page under `public/` (for example `public/chapters/ch09.html`).
-2. Reuse existing Distill article structure and style conventions from `distill_context.md`.
+2. Reuse existing Distill article structure and style conventions from `design/design_context.md`.
 3. Add/update navigation links (chapter contents and prev/next links).
 4. Verify local script/style paths remain relative to the new page location.

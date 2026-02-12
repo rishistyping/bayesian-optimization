@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "Developer scaffolding for the Distill-style Rain interactive site.",
   "scripts": {
+    "prepare": "node tools/setup_hooks.mjs",
+    "setup:hooks": "node tools/setup_hooks.mjs",
     "dev": "http-server public -p 8011 -c-1",
     "format": "prettier --write \"**/*.{md,json,yml,yaml,mjs}\"",
     "format:check": "prettier --check \"**/*.{md,json,yml,yaml,mjs}\"",

@@ -28,7 +28,7 @@ Do not move internal artifacts into `public/`.
 
 ## Guardrails
 
-- Follow `distill_context.md` as canonical guidance.
+- Follow `design/design_context.md` as canonical guidance.
 - Preserve narrative-first flow and progressive disclosure.
 - Keep controls keyboard-operable with visible focus states.
 - Respect `prefers-reduced-motion` behavior.
