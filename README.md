@@ -1,6 +1,6 @@
 # How to Change Your Mind | The Last Assumption (Interactive Edition)
 
-Distill-style interactive chapter adaptation of *The Last Assumption* Chapter 8 ("How to Change Your Mind").
+Distill-style interactive chapter adaptation of _The Last Assumption_ Chapter 8 ("How to Change Your Mind").
 
 ## Publish boundary
 
@@ -21,6 +21,17 @@ Do not place specs, captures, prompt logs, archives, or prototypes inside `publi
 
 Use local HTTP preview for full behavior parity with production browser policies.
 
+## Developer commands
+
+1. Install dependencies:
+   - `npm install`
+2. Run local server:
+   - `npm run dev`
+3. Run quality checks:
+   - `npm run lint`
+   - `npm run test`
+   - `npm run check`
+
 ## Repo layout
 
 - `public/`: production HTML/CSS/JS/assets
@@ -35,6 +46,8 @@ Use local HTTP preview for full behavior parity with production browser policies
 - Backward compatibility pointer: `design_context.md`
 - Agent/developer operating rules: `AGENTS.md`
 - Contributor workflow: `CONTRIBUTING.md`
+- Scaffolding implementation notes: `notes/scaffolding_plan.md`
+- Interactive guardrails: `notes/interactive_guardrails.md`
 
 ## Adding a new chapter/page
 

@@ -1,39 +1,39 @@
-import globals from 'globals';
+import globals from "globals";
 
 export default [
   {
-    ignores: ['node_modules/**', 'public/js/vendor/**', 'public/js/template.v2.js']
+    ignores: ["node_modules/**", "public/js/vendor/**", "public/js/template.v2.js"],
   },
   {
-    files: ['public/js/**/*.js'],
+    files: ["public/js/**/*.js"],
     languageOptions: {
       ecmaVersion: 2021,
-      sourceType: 'script',
+      sourceType: "script",
       globals: {
         ...globals.browser,
         ...globals.es2021,
-        module: 'readonly'
-      }
+        module: "readonly",
+      },
     },
     rules: {
-      'no-undef': 'error',
-      'no-unreachable': 'error',
-      'no-redeclare': 'error'
-    }
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-redeclare": "error",
+    },
   },
   {
-    files: ['tools/**/*.mjs'],
+    files: ["tools/**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module',
+      sourceType: "module",
       globals: {
-        ...globals.node
-      }
+        ...globals.node,
+      },
     },
     rules: {
-      'no-undef': 'error',
-      'no-unreachable': 'error',
-      'no-redeclare': 'error'
-    }
-  }
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-redeclare": "error",
+    },
+  },
 ];

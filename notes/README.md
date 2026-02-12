@@ -4,10 +4,10 @@ Non-published editorial and implementation notes.
 
 Use for working notes, narrative edits, and internal TODOs.
 
-change font 
+change font
 
-sideline references 
+sideline references
 
-scroll styling 
+scroll styling
 
 rain full window animation
