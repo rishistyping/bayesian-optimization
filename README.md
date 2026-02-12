@@ -33,6 +33,8 @@ Use local HTTP preview for full behavior parity with production browser policies
 
 - Canonical Distill guidance for this repo: `distill_context.md`
 - Backward compatibility pointer: `design_context.md`
+- Agent/developer operating rules: `AGENTS.md`
+- Contributor workflow: `CONTRIBUTING.md`
 
 ## Adding a new chapter/page
 
