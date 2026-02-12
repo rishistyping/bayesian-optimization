@@ -1,0 +1,98 @@
+# Design Folder Usage
+
+Use this folder when you want to request or implement layout changes with clear, precise instructions.
+The goal is to make changes specific enough that implementation is straightforward and review is fast.
+
+## What is in this folder
+
+- `design/design_context.md`: high-level design and interaction standards.
+- `design/layout_spec.md`: concrete layout rules based on Distill guidance.
+- `design/distill_context.md`: compatibility pointer.
+
+## How to write good layout instructions
+
+When asking for a layout change, describe:
+
+1. What should change visually.
+2. Exactly where it should change.
+3. What should not change.
+4. How it should behave on desktop and mobile.
+5. How to verify the result.
+
+If you skip any of these, requests become vague and implementation quality drops.
+
+## Recommended workflow
+
+1. Read `design/layout_spec.md` first.
+2. Choose the relevant layout pattern/class for your change.
+3. Write a request using the template below.
+4. Keep the change scoped to the minimum required files.
+5. Run `npm run check` before commit/push.
+
+## Request template (natural language, but precise)
+
+Copy/paste this and fill in the brackets:
+
+```md
+Goal
+
+- I want [specific visual result] in [specific section/component].
+
+Scope
+
+- Change only: [exact sections/components].
+- Do not change: [explicit exclusions such as runtime logic, model math, navigation URLs].
+
+Files
+
+- Expected files to edit: [paths]
+- Files that must remain untouched: [paths]
+
+Layout behavior
+
+- Use [layout class/pattern] from `design/layout_spec.md`.
+- Desktop: [placement, width, alignment, spacing]
+- Mobile: [stacking/reflow rules]
+
+Accessibility and motion
+
+- Keep keyboard order and visible focus intact.
+- Keep reduced-motion behavior understandable and equivalent.
+
+Acceptance criteria
+
+1. [clear visual check]
+2. [responsive check]
+3. [no runtime/logic regression]
+4. `npm run check` passes
+```
+
+## Example instructions
+
+### Example A: Add a full-width figure block
+
+“Move the selected figure wrapper to `.l-screen-inset`, keep surrounding paragraphs at body width, and make sure there is no horizontal scrolling on small screens.”
+
+### Example B: Move optional notes to gutter
+
+“Put explanatory notes in `.l-gutter`, keep required controls in main flow, and preserve keyboard navigation order.”
+
+### Example C: Adjust chapter nav spacing only
+
+“Update spacing and alignment for chapter nav in `public/css/styles.css` only; do not change nav links, JS behavior, or interaction logic.”
+
+## Verification checklist
+
+- Runtime assets remain under `public/**`.
+- No runtime references to `references/`, `prompts/`, `notes/`, or `tools/`.
+- No broken local `src`/`href` paths.
+- Layout works on desktop and mobile.
+- Keyboard/focus and reduced-motion behavior remain valid.
+- `npm run check` passes.
+
+## Related docs
+
+- `design/design_context.md`
+- `design/layout_spec.md`
+- `AGENTS.md`
+- `CONTRIBUTING.md`

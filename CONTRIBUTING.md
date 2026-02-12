@@ -23,5 +23,6 @@
 - Publish boundary is `public/**` only.
 - Keep prompts/notes/references/tools outside `public/`.
 - Follow `design/design_context.md` and `AGENTS.md`.
+- For layout-affecting PRs, follow `design/layout_spec.md` and include the layout checklist evidence in PR notes.
 - Keep runtime changes offline-friendly and minimal.
 - Pre-push enforces `npm run check`; run it locally before pushing.

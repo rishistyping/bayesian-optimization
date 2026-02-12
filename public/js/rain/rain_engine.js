@@ -524,6 +524,14 @@
     var copyLinkStatusTimer = null;
     var predictionChoice = null;
     var inputRenderRafId = null;
+    var sliderVisualInputs = [
+      priorSlider,
+      truthSlider,
+      falseSlider,
+      decisionThresholdSlider,
+      costFalsePositive,
+      costFalseNegative
+    ].filter(Boolean);
 
     var unlockStep = 1;
     var state = {
@@ -1097,6 +1105,7 @@
       if (costFalseNegativeValue) {
         costFalseNegativeValue.textContent = fixed(decisionState.falseNegativeCost, 1);
       }
+      syncSliderVisuals();
     }
 
     function refreshThresholdFromCosts() {
@@ -1467,6 +1476,32 @@
       priorSlider.value = fixed(state.prior, 2);
       truthSlider.value = fixed(state.tGivenR, 2);
       falseSlider.value = fixed(state.tGivenNotR, 2);
+      syncSliderVisuals();
+    }
+
+    function updateSliderVisual(sliderEl) {
+      if (!sliderEl) {
+        return;
+      }
+      var min = Number(sliderEl.min);
+      var max = Number(sliderEl.max);
+      var value = Number(sliderEl.value);
+      if (!Number.isFinite(min)) {
+        min = 0;
+      }
+      if (!Number.isFinite(max) || max <= min) {
+        max = min + 1;
+      }
+      if (!Number.isFinite(value)) {
+        value = min;
+      }
+      var pct = ((value - min) / (max - min)) * 100;
+      pct = Math.max(0, Math.min(100, pct));
+      sliderEl.style.setProperty("--slider-pct", fixed(pct, 2) + "%");
+    }
+
+    function syncSliderVisuals() {
+      sliderVisualInputs.forEach(updateSliderVisual);
     }
 
     function predictionLabel(kind) {
@@ -1766,6 +1801,7 @@
       state[key] = Number(value);
       updateActivePresetFromManualInput();
       markPredictionPending();
+      syncSliderVisuals();
       scheduleInputRender();
     }
 
@@ -1775,6 +1811,7 @@
       cancelReplay("slider-commit", { keepVisualState: false, keepProgress: false });
       state[key] = Number(value);
       updateActivePresetFromManualInput();
+      syncSliderVisuals();
       render({ announce: true, resampleParticles: true, animateParticles: true });
       resolvePrediction(window.RainModel.deriveState(state));
       pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
@@ -1836,6 +1873,7 @@
         cancelReplay("threshold-input", { keepVisualState: false, keepProgress: false });
         decisionState.useCostThreshold = false;
         decisionState.threshold = clamp01(decisionThresholdSlider.value);
+        updateSliderVisual(decisionThresholdSlider);
         setThresholdVisual();
         render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
       });
@@ -1843,6 +1881,7 @@
         cancelScheduledInputRender();
         decisionState.useCostThreshold = false;
         decisionState.threshold = clamp01(decisionThresholdSlider.value);
+        updateSliderVisual(decisionThresholdSlider);
         setThresholdVisual();
         render({ announce: false, persistHash: true, resampleParticles: false, animateParticles: false });
         announcePosterior("Decision threshold set to " + percent(decisionState.threshold) + ".");
@@ -1866,6 +1905,7 @@
         cancelScheduledInputRender();
         cancelReplay("cost-input", { keepVisualState: false, keepProgress: false });
         decisionState.falsePositiveCost = Math.max(0.1, Number(costFalsePositive.value));
+        updateSliderVisual(costFalsePositive);
         if (decisionState.useCostThreshold) {
           refreshThresholdFromCosts();
         }
@@ -1884,6 +1924,7 @@
         cancelScheduledInputRender();
         cancelReplay("cost-input", { keepVisualState: false, keepProgress: false });
         decisionState.falseNegativeCost = Math.max(0.1, Number(costFalseNegative.value));
+        updateSliderVisual(costFalseNegative);
         if (decisionState.useCostThreshold) {
           refreshThresholdFromCosts();
         }

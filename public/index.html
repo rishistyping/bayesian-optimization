@@ -31,6 +31,7 @@
   <link rel="stylesheet" type="text/css" href="css/styles.css">
   <link rel="stylesheet" type="text/css" href="css/rain.css">
   <script defer src="js/hider.js"></script>
+  <script defer src="js/cursor_interactions.js"></script>
   <script defer src="js/vendor/d3.v7.min.js"></script>
   <script defer src="js/rain/rain_model.js"></script>
   <script defer src="js/rain/rain_preview_d3.js"></script>
@@ -39,6 +40,7 @@
 </head>
 
 <body>
+  <div id="page-scroll-progress" aria-hidden="true"></div>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <d-front-matter>
@@ -49,7 +51,8 @@
         "authors": [
           {
             "author": "Emad Mostaque",
-            "authorURL": ""
+            "authorURL": "",
+            "affiliation": "Intelligent Internet"
           }
         ],
         "katex": {
@@ -100,8 +103,16 @@
       <p>
         How much should you believe them? Don't ask yes or no; ask how confident you should be.
       </p>
+      <aside class="reference-note r-gutter-note" id="note-1" aria-label="Reference note 1">
+        <p><strong>[1].</strong> Your prior is the base rate; Bayes updating starts from that baseline, not from zero.</p>
+        <p class="reference-note-source">
+          Source:
+          <a href="https://plato.stanford.edu/entries/bayes-theorem/" target="_blank" rel="noopener noreferrer">Bayes' theorem (SEP)</a>;
+          <a href="https://www.ncbi.nlm.nih.gov/books/NBK605677/" target="_blank" rel="noopener noreferrer">Bayes theorem in diagnosis (NCBI)</a>.
+        </p>
+      </aside>
       <p>
-        Start with your starting belief (base rate) before testimony. This can come from season, location, or recent weather.
+        Start with your starting belief (base rate) before testimony. This can come from season, location, or recent weather.<a class="reference-note-marker" href="#note-1" aria-label="Read reference note 1">[1]</a>
       </p>
     </section>
 
@@ -110,8 +121,16 @@
       <p>
         You see things. You remember things. People tell you things. These all act like channels that pass information into your judgment.
       </p>
+      <aside class="reference-note r-gutter-note" id="note-2" aria-label="Reference note 2">
+        <p><strong>[2].</strong> <d-math>P(T|R)</d-math> and <d-math>P(T|\neg R)</d-math> work like sensitivity and false-alarm behavior in diagnostic reasoning.</p>
+        <p class="reference-note-source">
+          Source:
+          <a href="https://www.ncbi.nlm.nih.gov/books/NBK605677/" target="_blank" rel="noopener noreferrer">Bayes theorem in diagnosis (NCBI)</a>;
+          <a href="https://www.ncbi.nlm.nih.gov/books/NBK383/" target="_blank" rel="noopener noreferrer">Likelihood ratios and testing (NCBI)</a>.
+        </p>
+      </aside>
       <p>
-        Testimony is a channel too. It depends on how often a person is right when it rains, and how often they cry rain when it doesn't. Those two numbers determine how informative testimony is.
+        Testimony is a channel too. It depends on how often a person is right when it rains, and how often they cry rain when it doesn't. Those two numbers determine how informative testimony is.<a class="reference-note-marker" href="#note-2" aria-label="Read reference note 2">[2]</a>
       </p>
 
       <div id="channel-techniques" class="story-subsection is-story-locked" data-story-step="5" aria-disabled="true">
@@ -142,10 +161,18 @@
         Once you set a prior and channel reliability, the posterior is not a guess. Consistency requires it.
         Once inputs are fixed, the answer is forced.
       </p>
+      <aside class="reference-note r-gutter-note" id="note-3" aria-label="Reference note 3">
+        <p><strong>[3].</strong> Once prior and likelihood terms are fixed, the posterior is mathematically determined.</p>
+        <p class="reference-note-source">
+          Source:
+          <a href="https://plato.stanford.edu/entries/bayes-theorem/" target="_blank" rel="noopener noreferrer">Bayes' theorem (SEP)</a>;
+          <a href="https://www.ncbi.nlm.nih.gov/books/NBK605677/" target="_blank" rel="noopener noreferrer">Bayes theorem in diagnosis (NCBI)</a>.
+        </p>
+      </aside>
       <p>
         In the canonical setup, the posterior lands at 78.5% after testimony.
         Using symbols: <d-math>P(R)=0.30</d-math>, <d-math>P(T|R)=0.85</d-math>, <d-math>P(T|\neg R)=0.10</d-math>, so
-        <d-math>P(R|T)=0.785</d-math>.
+        <d-math>P(R|T)=0.785</d-math>.<a class="reference-note-marker" href="#note-3" aria-label="Read reference note 3">[3]</a>
       </p>
 
       <figure class="rain-figure">
@@ -166,9 +193,9 @@
             <div class="replay-panel" data-control="replay" data-step="3" role="region" aria-label="Replay stepper controls">
               <div class="replay-controls">
                 <div class="replay-cluster">
-                  <button type="button" id="replay-play" aria-label="Play replay sequence">Play</button>
-                  <button type="button" id="replay-prev" aria-label="Go to previous replay step">Prev</button>
-                  <button type="button" id="replay-next" aria-label="Go to next replay step">Next</button>
+                  <button type="button" id="replay-play" data-cursor-label="Play replay" aria-label="Play replay sequence">Play</button>
+                  <button type="button" id="replay-prev" data-cursor-label="Previous step" aria-label="Go to previous replay step">Prev</button>
+                  <button type="button" id="replay-next" data-cursor-label="Next step" aria-label="Go to next replay step">Next</button>
                 </div>
                 <div class="replay-steps" role="group" aria-label="Replay steps">
                   <button type="button" class="replay-step-btn" data-replay-step="1" aria-label="Replay step 1: Prior">1 Prior</button>
@@ -287,7 +314,7 @@
               <button type="button" data-preset="canonical">TLA canonical</button>
               <button type="button" data-preset="very_reliable">Very reliable friend</button>
               <button type="button" data-preset="unreliable">Unreliable friend</button>
-              <button type="button" id="reset-state">Reset</button>
+              <button type="button" id="reset-state" data-cursor-label="Reset values">Reset</button>
             </div>
 
             <button type="button" class="collapsible" id="advanced-toggle" data-control="advanced" data-step="3" aria-expanded="false">
@@ -313,9 +340,17 @@
 
     <section id="section-conditional" class="story-section conditional-section" data-unlock-step="3">
       <h1>Conditional perspective</h1>
+      <aside class="reference-note r-gutter-note" id="note-4" aria-label="Reference note 4">
+        <p><strong>[4].</strong> Conditioning renormalizes probability inside the subset where the condition is true.</p>
+        <p class="reference-note-source">
+          Source:
+          <a href="https://plato.stanford.edu/entries/bayes-theorem/" target="_blank" rel="noopener noreferrer">Bayes' theorem (SEP)</a>;
+          <a href="https://www.ncbi.nlm.nih.gov/books/NBK605677/" target="_blank" rel="noopener noreferrer">Bayes theorem in diagnosis (NCBI)</a>.
+        </p>
+      </aside>
       <p>
         Conditional probability means we shrink attention to a subset of days. In <strong>Given testimony</strong>,
-        the denominator is only days where testimony says rain.
+        the denominator is only days where testimony says rain.<a class="reference-note-marker" href="#note-4" aria-label="Read reference note 4">[4]</a>
       </p>
       <p>
         Posterior is the rainy share inside that testimony subset. Use the three sliders above; this view updates live.
@@ -358,8 +393,8 @@
                 </div>
               </div>
               <div class="cp-sim-controls" role="group" aria-label="Monte Carlo drop simulation controls">
-                <button type="button" id="cp-sim-start">Start</button>
-                <button type="button" id="cp-sim-stop">Stop</button>
+                <button type="button" id="cp-sim-start" data-cursor-label="Start sampling">Start</button>
+                <button type="button" id="cp-sim-stop" data-cursor-label="Stop sampling">Stop</button>
                 <span id="cp-sim-status" class="cp-sim-status" aria-live="polite"></span>
               </div>
               <p id="cp-motion-note" class="cp-motion-note" role="status" aria-live="polite" hidden></p>
@@ -372,8 +407,16 @@
 
     <section id="section-playground" class="story-section" data-unlock-step="4">
       <h1>Why We Fail</h1>
+      <aside class="reference-note r-gutter-note" id="note-5" aria-label="Reference note 5">
+        <p><strong>[5].</strong> People often underweight base rates; natural-frequency representations improve Bayesian judgments.</p>
+        <p class="reference-note-source">
+          Source:
+          <a href="https://pubmed.ncbi.nlm.nih.gov/17835457/" target="_blank" rel="noopener noreferrer">Tversky &amp; Kahneman reference index (PubMed)</a>;
+          <a href="https://doi.org/10.1037/0033-295X.102.4.684" target="_blank" rel="noopener noreferrer">Gigerenzer &amp; Hoffrage (DOI)</a>.
+        </p>
+      </aside>
       <p>
-        Try presets and predict first: will testimony move belief a lot or a little? Reliable testimony shifts belief a lot; unreliable testimony moves it only a little.
+        Try presets and predict first: will testimony move belief a lot or a little? Reliable testimony shifts belief a lot; unreliable testimony moves it only a little.<a class="reference-note-marker" href="#note-5" aria-label="Read reference note 5">[5]</a>
       </p>
       <p>
         You don't jump to 85%. You don't stay at 30%. You land where both prior and evidence agree.

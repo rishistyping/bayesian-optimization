@@ -46,6 +46,8 @@ Use local HTTP preview for full behavior parity with production browser policies
 ## Guidance docs
 
 - Canonical design guidance for this repo: `design/design_context.md`
+- Layout specification (Distill Guide-derived): `design/layout_spec.md`
+- How to request precise design/layout changes: `design/README.md`
 - Compatibility pointer: `design/distill_context.md`
 - Agent/developer operating rules: `AGENTS.md`
 - Contributor workflow: `CONTRIBUTING.md`

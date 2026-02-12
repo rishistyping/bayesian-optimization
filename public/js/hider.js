@@ -274,8 +274,40 @@
     }
   }
 
+  function initScrollProgress() {
+    var progressEl = document.getElementById("page-scroll-progress");
+    if (!progressEl) {
+      return;
+    }
+
+    var doc = document.documentElement;
+    var ticking = false;
+
+    function updateProgress() {
+      var maxScrollable = Math.max(1, doc.scrollHeight - window.innerHeight);
+      var current = Math.max(0, window.scrollY || doc.scrollTop || 0);
+      var progress = Math.min(1, current / maxScrollable);
+      progressEl.style.transform = "scaleX(" + progress + ")";
+      ticking = false;
+    }
+
+    function scheduleUpdate() {
+      if (ticking) {
+        return;
+      }
+      ticking = true;
+      window.requestAnimationFrame(updateProgress);
+    }
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("load", scheduleUpdate);
+    scheduleUpdate();
+  }
+
   function initPageEnhancements() {
     initThemeToggle();
+    initScrollProgress();
     initCollapsibles();
     initChapterContents();
   }

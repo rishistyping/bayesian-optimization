@@ -29,6 +29,7 @@ Do not move internal artifacts into `public/`.
 ## Guardrails
 
 - Follow `design/design_context.md` as canonical guidance.
+- For layout-related changes, follow `design/layout_spec.md` and require explicit desktop/mobile acceptance criteria.
 - Preserve narrative-first flow and progressive disclosure.
 - Keep controls keyboard-operable with visible focus states.
 - Respect `prefers-reduced-motion` behavior.
