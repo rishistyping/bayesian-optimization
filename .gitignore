@@ -8,3 +8,9 @@ public.zip
 
 # Internal scratch capture area (kept untracked)
 references/captures/tmp/
+
+# Node/tooling artifacts
+node_modules/
+npm-debug.log*
+.eslintcache
+.stylelintcache

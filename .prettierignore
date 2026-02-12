@@ -1,0 +1,4 @@
+node_modules/
+.git/
+public/js/vendor/
+references/captures/tmp/

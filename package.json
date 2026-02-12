@@ -1,0 +1,24 @@
+{
+  "name": "bayesian-optimization-scaffold",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Developer scaffolding for the Distill-style Rain interactive site.",
+  "scripts": {
+    "dev": "http-server public -p 8011 -c-1",
+    "format": "prettier --write \"**/*.{md,json,yml,yaml,mjs}\"",
+    "format:check": "prettier --check \"**/*.{md,json,yml,yaml,mjs}\"",
+    "lint": "npm run lint:js && npm run lint:css",
+    "lint:js": "eslint --no-error-on-unmatched-pattern \"public/js/**/*.js\" \"tools/**/*.mjs\"",
+    "lint:css": "stylelint \"public/css/**/*.css\"",
+    "test": "node tools/sanity_check.mjs",
+    "check": "npm run format:check && npm run lint && npm run test"
+  },
+  "devDependencies": {
+    "eslint": "^9.20.1",
+    "globals": "^15.14.0",
+    "http-server": "^14.1.1",
+    "prettier": "^3.5.2",
+    "stylelint": "^16.14.1",
+    "stylelint-config-standard": "^37.0.0"
+  }
+}
