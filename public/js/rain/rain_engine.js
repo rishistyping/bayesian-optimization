@@ -593,6 +593,10 @@
           }
         }
       });
+      // Ensure conditional sampling starts on first load in normal motion mode.
+      if (conditionalViz && typeof conditionalViz.setRunning === "function" && !prefersReducedMotion) {
+        conditionalViz.setRunning(true);
+      }
     }
 
     var announcePosterior = debounce(function (message) {

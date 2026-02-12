@@ -30,8 +30,8 @@
     if (stored) {
       return stored;
     }
-    // Default is always light unless user explicitly chose dark.
-    return "light";
+    // Default to dark unless user explicitly chose a theme.
+    return "dark";
   }
 
   function applyTheme(theme) {
