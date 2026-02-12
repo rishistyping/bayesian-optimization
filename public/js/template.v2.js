@@ -25,7 +25,7 @@
       <h3>Published</h3>
       ${e.publishedDate?`
         <p>${e.publishedMonth} ${e.publishedDay}, ${e.publishedYear}</p> `:`
-        <p><a href="downloads/tla-final-edit.pdf" download="TLA-Final-Edit.pdf">Download Digital Copy</a></p>`}
+        <p><a href="https://docs.google.com/document/d/1LdcHrVG2jxznV5s4ixvwV_jqWfD7_w-e_GEt9N1daqE/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Download Digital Copy</a></p>`}
     </div>
     <div>
       <h3>DOI</h3>
