@@ -3,7 +3,6 @@ import path from "node:path";
 
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, "public");
-const indexPath = path.join(publicDir, "index.html");
 
 const errors = [];
 
@@ -63,11 +62,6 @@ function checkRuntimeRefs(html, htmlPath) {
 
   refs.forEach(({ kind, ref }) => {
     if (!ref || isExternalRef(ref)) {
-      return;
-    }
-
-    if (/(^|\/)\.\.(\/|$)/.test(ref)) {
-      fail(`[runtime-ref] ${kind} uses parent traversal: ${ref}`);
       return;
     }
 
@@ -200,19 +194,35 @@ function checkPublicBoundary() {
   });
 }
 
+function collectHtmlFiles(dirPath) {
+  const htmlFiles = [];
+  walk(dirPath, (filePath) => {
+    if (path.extname(filePath).toLowerCase() === ".html") {
+      htmlFiles.push(filePath);
+    }
+  });
+  return htmlFiles;
+}
+
 function main() {
   if (!fs.existsSync(publicDir)) {
     fail("[sanity] missing public/ directory");
   }
 
-  if (!fs.existsSync(indexPath)) {
-    fail("[sanity] missing public/index.html");
-  } else {
-    const html = fs.readFileSync(indexPath, "utf8");
-    checkRuntimeRefs(html, indexPath);
-    checkDuplicateIds(html);
-    checkKeyControls(html);
-    checkTabIndex(html);
+  if (fs.existsSync(publicDir)) {
+    const htmlFiles = collectHtmlFiles(publicDir);
+    if (!htmlFiles.length) {
+      fail("[sanity] no HTML files found under public/");
+    }
+    htmlFiles.forEach((htmlPath) => {
+      const html = fs.readFileSync(htmlPath, "utf8");
+      checkRuntimeRefs(html, htmlPath);
+      checkDuplicateIds(html);
+      checkTabIndex(html);
+      if (path.basename(htmlPath) === "index.html") {
+        checkKeyControls(html);
+      }
+    });
   }
 
   if (fs.existsSync(publicDir)) {

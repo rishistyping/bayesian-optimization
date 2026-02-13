@@ -11,8 +11,8 @@
   var DEFAULT_DECISION_THRESHOLD = 0.60;
   var DEFAULT_FALSE_POSITIVE_COST = 1.0;
   var DEFAULT_FALSE_NEGATIVE_COST = 1.0;
-  var REPLAY_STEP_HOLD_MS = { 1: 1000, 2: 1000, 3: 1000, 4: 900 };
-  var REPLAY_STEP_HOLD_MS_REDUCED = { 1: 450, 2: 450, 3: 450, 4: 450 };
+  var REPLAY_STEP_HOLD_MS = { 1: 950, 2: 950, 3: 950, 4: 950, 5: 900 };
+  var REPLAY_STEP_HOLD_MS_REDUCED = { 1: 420, 2: 420, 3: 420, 4: 420, 5: 420 };
   var REPLAY_TRANSITION_MS = 420;
   var REPLAY_TRANSITION_MS_REDUCED = 120;
   var REPLAY_PARTICLE_DRIFT_MS = 760;
@@ -21,7 +21,10 @@
   var REPLAY_LOOP_GAP_MS = 220;
   var RAIN_PREVIEW_EVIDENCE_BITS = 1.5;
   var RAIN_PREVIEW_LARGE_DELTA = 0.06;
-  var PREDICTION_SAME_DELTA = 0.03;
+  var FACTOR_STAGES = ["perception", "memory", "honesty", "communication"];
+  var DEFAULT_SECOND_SIGNAL_GIVEN_R = 0.92;
+  var DEFAULT_SECOND_SIGNAL_GIVEN_NOT_R = 0.08;
+  var DEFAULT_UNLOCK_STEP = 5;
 
   function percent(value) {
     return (value * 100).toFixed(1) + "%";
@@ -85,6 +88,30 @@
       return 1;
     }
     return numeric;
+  }
+
+  function factorProduct(factors) {
+    if (!factors) {
+      return 0;
+    }
+    var keys = FACTOR_STAGES;
+    var product = 1;
+    for (var i = 0; i < keys.length; i += 1) {
+      var key = keys[i];
+      product *= clamp01(factors[key]);
+    }
+    return clamp01(product);
+  }
+
+  function seededFactorsFromTotal(total) {
+    var safe = clamp01(total);
+    var root = Math.pow(Math.max(1e-6, safe), 1 / FACTOR_STAGES.length);
+    return {
+      perception: root,
+      memory: root,
+      honesty: root,
+      communication: root
+    };
   }
 
   function cubicInOut(t) {
@@ -261,6 +288,66 @@
       hasAny = true;
     }
 
+    var channelMode = params.get("cm");
+    if (channelMode === "simple" || channelMode === "factorized") {
+      partial.channelMode = channelMode;
+      hasAny = true;
+    }
+
+    var hitFactorMap = {
+      perception: "rhp",
+      memory: "rhm",
+      honesty: "rhh",
+      communication: "rhc"
+    };
+    var falseFactorMap = {
+      perception: "rfp",
+      memory: "rfm",
+      honesty: "rfh",
+      communication: "rfc"
+    };
+    var hitFactors = {};
+    var falseFactors = {};
+    var hitFactorFound = false;
+    var falseFactorFound = false;
+    FACTOR_STAGES.forEach(function (stage) {
+      var hitValue = parseHashNumber(params.get(hitFactorMap[stage]));
+      if (hitValue !== null) {
+        hitFactors[stage] = hitValue;
+        hitFactorFound = true;
+      }
+      var falseValue = parseHashNumber(params.get(falseFactorMap[stage]));
+      if (falseValue !== null) {
+        falseFactors[stage] = falseValue;
+        falseFactorFound = true;
+      }
+    });
+    if (hitFactorFound) {
+      partial.hitFactors = hitFactors;
+      hasAny = true;
+    }
+    if (falseFactorFound) {
+      partial.falseFactors = falseFactors;
+      hasAny = true;
+    }
+
+    var sGivenR = parseHashNumber(params.get("sgr"));
+    if (sGivenR !== null) {
+      partial.sGivenR = sGivenR;
+      hasAny = true;
+    }
+    var sGivenNotR = parseHashNumber(params.get("sgnr"));
+    if (sGivenNotR !== null) {
+      partial.sGivenNotR = sGivenNotR;
+      hasAny = true;
+    }
+
+    var observation = params.get("so");
+    if (observation === "none" || observation === "saw_rain" || observation === "saw_no_rain") {
+      partial.observation = observation;
+      hasAny = true;
+    }
+
     return hasAny ? partial : null;
   }
 
@@ -273,6 +360,28 @@
     params.set("cfp", fixed(state.falsePositiveCost, 1));
     params.set("cfn", fixed(state.falseNegativeCost, 1));
     params.set("uc", state.useCostThreshold ? "1" : "0");
+    params.set("cm", state.channelMode === "factorized" ? "factorized" : "simple");
+
+    var hitFactorMap = {
+      perception: "rhp",
+      memory: "rhm",
+      honesty: "rhh",
+      communication: "rhc"
+    };
+    var falseFactorMap = {
+      perception: "rfp",
+      memory: "rfm",
+      honesty: "rfh",
+      communication: "rfc"
+    };
+    FACTOR_STAGES.forEach(function (stage) {
+      params.set(hitFactorMap[stage], fixed(state.hitFactors[stage], 2));
+      params.set(falseFactorMap[stage], fixed(state.falseFactors[stage], 2));
+    });
+
+    params.set("sgr", fixed(state.sGivenR, 2));
+    params.set("sgnr", fixed(state.sGivenNotR, 2));
+    params.set("so", state.observation);
 
     var nextHash = "#" + params.toString();
     if (window.location.hash !== nextHash) {
@@ -453,7 +562,10 @@
     var priorBarValue = root.querySelector("#prior-bar-value");
     var ptBar = root.querySelector("#pt-bar");
     var ptBarValue = root.querySelector("#pt-bar-value");
+    var post1Bar = root.querySelector("#post1-bar");
+    var post1BarValue = root.querySelector("#post1-bar-value");
     var testimonyStrip = root.querySelector("#testimony-strip");
+    var secondSignalStrip = root.querySelector("#second-signal-strip");
     var posteriorTrack = root.querySelector(".posterior-track");
     var posteriorParticlesSvg = root.querySelector("#posterior-particles");
     var thresholdMarker = root.querySelector("#decision-threshold");
@@ -467,7 +579,12 @@
 
     var advancedPt = root.querySelector("#advanced-pt");
     var advancedNum = root.querySelector("#advanced-num");
+    var advancedPt2 = root.querySelector("#advanced-pt2");
+    var advancedNum2 = root.querySelector("#advanced-num2");
+    var advancedPost1 = root.querySelector("#advanced-post1");
     var advancedPost = root.querySelector("#advanced-post");
+    var advancedEvidence1 = root.querySelector("#advanced-evidence-1");
+    var advancedEvidence2 = root.querySelector("#advanced-evidence-2");
     var advancedEvidence = root.querySelector("#advanced-evidence");
     var advancedKl = root.querySelector("#advanced-kl");
     var replayPlay = root.querySelector("#replay-play");
@@ -487,6 +604,69 @@
     var costFalseNegative = root.querySelector("#cost-false-negative");
     var costFalseNegativeValue = root.querySelector("#cost-false-negative-value");
     var decisionLossReadout = root.querySelector("#decision-loss-readout");
+    var secondSignalObservation = root.querySelector("#second-signal-observation");
+    var secondSignalTrueSlider = root.querySelector("#second-signal-true-slider");
+    var secondSignalTrueValue = root.querySelector("#second-signal-true-value");
+    var secondSignalFalseSlider = root.querySelector("#second-signal-false-slider");
+    var secondSignalFalseValue = root.querySelector("#second-signal-false-value");
+    var twoStepPrior = root.querySelector("#two-step-prior");
+    var twoStepPost1 = root.querySelector("#two-step-post1");
+    var twoStepPost2 = root.querySelector("#two-step-post2");
+    var channelModeSimple = root.querySelector("#channel-mode-simple");
+    var channelModeFactorized = root.querySelector("#channel-mode-factorized");
+    var channelSimpleControls = Array.prototype.slice.call(root.querySelectorAll(".channel-simple-control"));
+    var factorizedPanel = root.querySelector("#factorized-channel-panel");
+    var factorHitTotal = root.querySelector("#factor-hit-total");
+    var factorFalseTotal = root.querySelector("#factor-false-total");
+    var pipelineTruth = root.querySelector("#pipeline-truth");
+    var pipelineChannel = root.querySelector("#pipeline-channel");
+    var pipelineSignal = root.querySelector("#pipeline-signal");
+    var pipelineUpdate = root.querySelector("#pipeline-update");
+    var pipelineDetail = root.querySelector("#pipeline-detail");
+    var evidenceSummaryBits = root.querySelector("#evidence-summary-bits");
+    var evidenceSummaryKl = root.querySelector("#evidence-summary-kl");
+    var evidenceSummaryShift = root.querySelector("#evidence-summary-shift");
+    var scenarioCompareCard = root.querySelector("#scenario-compare-card");
+    var scenarioCompareCurrent = root.querySelector("#scenario-compare-current");
+    var scenarioCompareCanonical = root.querySelector("#scenario-compare-canonical");
+    var scenarioCompareVeryReliable = root.querySelector("#scenario-compare-very-reliable");
+    var scenarioCompareUnreliable = root.querySelector("#scenario-compare-unreliable");
+    var scenarioCompareCurrentBar = root.querySelector("#scenario-compare-current-bar");
+    var scenarioCompareCanonicalBar = root.querySelector("#scenario-compare-canonical-bar");
+    var scenarioCompareVeryReliableBar = root.querySelector("#scenario-compare-very-reliable-bar");
+    var scenarioCompareUnreliableBar = root.querySelector("#scenario-compare-unreliable-bar");
+    var secondSignalCtaRain = root.querySelector("#second-signal-cta-rain");
+    var secondSignalCtaNoRain = root.querySelector("#second-signal-cta-no-rain");
+    var secondSignalCtaClear = root.querySelector("#second-signal-cta-clear");
+    var formulaLevelButtons = Array.prototype.slice.call(root.querySelectorAll("button[data-formula-level]"));
+    var formulaPanelBasic = root.querySelector("#formula-panel-basic");
+    var formulaPanelSymbolic = root.querySelector("#formula-panel-symbolic");
+    var formulaPanelDerived = root.querySelector("#formula-panel-derived");
+
+    var hitFactorSliders = {
+      perception: root.querySelector("#hit-perception-slider"),
+      memory: root.querySelector("#hit-memory-slider"),
+      honesty: root.querySelector("#hit-honesty-slider"),
+      communication: root.querySelector("#hit-communication-slider")
+    };
+    var falseFactorSliders = {
+      perception: root.querySelector("#false-perception-slider"),
+      memory: root.querySelector("#false-memory-slider"),
+      honesty: root.querySelector("#false-honesty-slider"),
+      communication: root.querySelector("#false-communication-slider")
+    };
+    var hitFactorOutputs = {
+      perception: root.querySelector("#hit-perception-value"),
+      memory: root.querySelector("#hit-memory-value"),
+      honesty: root.querySelector("#hit-honesty-value"),
+      communication: root.querySelector("#hit-communication-value")
+    };
+    var falseFactorOutputs = {
+      perception: root.querySelector("#false-perception-value"),
+      memory: root.querySelector("#false-memory-value"),
+      honesty: root.querySelector("#false-honesty-value"),
+      communication: root.querySelector("#false-communication-value")
+    };
     var rainPreviewMount = root.querySelector("#rain-preview");
     var rainPreviewProb = root.querySelector("#rain-preview-prob");
     var rainPreviewCertainty = root.querySelector("#rain-preview-certainty");
@@ -494,8 +674,6 @@
     var conditionalMotionNote = document.getElementById("cp-motion-note");
     var copyLinkButton = root.querySelector("#copy-link-btn");
     var copyLinkStatus = root.querySelector("#copy-link-status");
-    var predictionButtons = Array.prototype.slice.call(root.querySelectorAll("button[data-predict]"));
-    var predictionFeedback = root.querySelector("#prediction-feedback");
 
     var resetButton = root.querySelector("#reset-state");
     var presetButtons = Array.prototype.slice.call(root.querySelectorAll("button[data-preset]"));
@@ -521,8 +699,8 @@
       startedAtMs: 0,
       totalMs: 0
     };
+    var formulaLevel = "basic";
     var copyLinkStatusTimer = null;
-    var predictionChoice = null;
     var inputRenderRafId = null;
     var sliderVisualInputs = [
       priorSlider,
@@ -530,14 +708,35 @@
       falseSlider,
       decisionThresholdSlider,
       costFalsePositive,
-      costFalseNegative
+      costFalseNegative,
+      secondSignalTrueSlider,
+      secondSignalFalseSlider,
+      hitFactorSliders.perception,
+      hitFactorSliders.memory,
+      hitFactorSliders.honesty,
+      hitFactorSliders.communication,
+      falseFactorSliders.perception,
+      falseFactorSliders.memory,
+      falseFactorSliders.honesty,
+      falseFactorSliders.communication
     ].filter(Boolean);
 
-    var unlockStep = 1;
+    // Keep chapter controls enabled on first load; state still starts from canonical preset values.
+    var unlockStep = DEFAULT_UNLOCK_STEP;
     var state = {
       prior: window.RainModel.PRESETS.canonical.prior,
       tGivenR: window.RainModel.PRESETS.canonical.tGivenR,
       tGivenNotR: window.RainModel.PRESETS.canonical.tGivenNotR
+    };
+    var channelState = {
+      mode: "simple",
+      hitFactors: seededFactorsFromTotal(state.tGivenR),
+      falseFactors: seededFactorsFromTotal(state.tGivenNotR)
+    };
+    var secondSignalState = {
+      observation: "none",
+      sGivenR: DEFAULT_SECOND_SIGNAL_GIVEN_R,
+      sGivenNotR: DEFAULT_SECOND_SIGNAL_GIVEN_NOT_R
     };
     var decisionState = {
       threshold: DEFAULT_DECISION_THRESHOLD,
@@ -559,6 +758,43 @@
       if (typeof hashPartial.useCostThreshold === "boolean") {
         decisionState.useCostThreshold = hashPartial.useCostThreshold;
       }
+      if (hashPartial.channelMode === "simple" || hashPartial.channelMode === "factorized") {
+        channelState.mode = hashPartial.channelMode;
+      }
+      if (hashPartial.hitFactors) {
+        FACTOR_STAGES.forEach(function (stage) {
+          if (hashPartial.hitFactors[stage] !== undefined) {
+            channelState.hitFactors[stage] = clamp01(hashPartial.hitFactors[stage]);
+          }
+        });
+      }
+      if (hashPartial.falseFactors) {
+        FACTOR_STAGES.forEach(function (stage) {
+          if (hashPartial.falseFactors[stage] !== undefined) {
+            channelState.falseFactors[stage] = clamp01(hashPartial.falseFactors[stage]);
+          }
+        });
+      }
+      if (hashPartial.sGivenR !== undefined) {
+        secondSignalState.sGivenR = clamp01(hashPartial.sGivenR);
+      }
+      if (hashPartial.sGivenNotR !== undefined) {
+        secondSignalState.sGivenNotR = clamp01(hashPartial.sGivenNotR);
+      }
+      if (hashPartial.observation) {
+        secondSignalState.observation = hashPartial.observation;
+      }
+    }
+
+    if (channelState.mode === "factorized") {
+      if (!(hashPartial && hashPartial.hitFactors)) {
+        channelState.hitFactors = seededFactorsFromTotal(state.tGivenR);
+      }
+      if (!(hashPartial && hashPartial.falseFactors)) {
+        channelState.falseFactors = seededFactorsFromTotal(state.tGivenNotR);
+      }
+      state.tGivenR = factorProduct(channelState.hitFactors);
+      state.tGivenNotR = factorProduct(channelState.falseFactors);
     }
     particles = createParticles(state.prior, PARTICLE_COUNT);
 
@@ -567,8 +803,8 @@
     if (window.RainPreviewD3 && typeof window.RainPreviewD3.init === "function" && rainPreviewMount) {
       rainPreview = window.RainPreviewD3.init(rainPreviewMount, {
         maxDrops: PARTICLE_COUNT,
-        panelMin: 220,
-        panelMax: 280,
+        panelMin: 280,
+        panelMax: 360,
         strokeBase: 1.1,
         smoothing: 0.12,
         pulseMs: 320
@@ -593,10 +829,6 @@
           }
         }
       });
-      // Ensure conditional sampling starts on first load in normal motion mode.
-      if (conditionalViz && typeof conditionalViz.setRunning === "function" && !prefersReducedMotion) {
-        conditionalViz.setRunning(true);
-      }
     }
 
     var announcePosterior = debounce(function (message) {
@@ -885,6 +1117,7 @@
 
     var priorRow = priorBar ? priorBar.closest(".bar-row") : null;
     var testimonyRow = ptBar ? ptBar.closest(".bar-row") : null;
+    var post1Row = post1Bar ? post1Bar.closest(".bar-row") : null;
     var posteriorRow = posteriorBar ? posteriorBar.closest(".bar-row") : null;
 
     function setReplayProgress(value) {
@@ -921,7 +1154,7 @@
         replayPrev.disabled = step === null ? true : step <= 1;
       }
       if (replayNext) {
-        replayNext.disabled = step === null ? true : step >= 4;
+        replayNext.disabled = step === null ? true : step >= 5;
       }
     }
 
@@ -1003,7 +1236,7 @@
 
     function getReplayTotalDuration(profile) {
       var p = profile || getReplayProfile();
-      return p.stepHold[1] + p.stepHold[2] + p.stepHold[3] + p.stepHold[4];
+      return p.stepHold[1] + p.stepHold[2] + p.stepHold[3] + p.stepHold[4] + p.stepHold[5];
     }
 
     function scheduleReplayCycle(runId, profile) {
@@ -1031,6 +1264,10 @@
       }, hold[1] + hold[2] + hold[3], runId);
 
       scheduleReplayTimeout(function () {
+        applyReplayStep(5, { animated: true });
+      }, hold[1] + hold[2] + hold[3] + hold[4], runId);
+
+      scheduleReplayTimeout(function () {
         if (runId !== replay.runId || replay.mode !== "playing") {
           return;
         }
@@ -1051,6 +1288,10 @@
         ptBar.classList.remove("is-subdued");
         ptBar.style.transitionDuration = "";
       }
+      if (post1Bar) {
+        post1Bar.classList.remove("is-hidden");
+        post1Bar.style.transitionDuration = "";
+      }
       if (posteriorBar) {
         posteriorBar.classList.remove("is-hidden");
         posteriorBar.style.transitionDuration = "";
@@ -1060,6 +1301,9 @@
       }
       if (testimonyRow) {
         testimonyRow.classList.remove("is-highlight");
+      }
+      if (post1Row) {
+        post1Row.classList.remove("is-highlight");
       }
       if (testimonyStrip) {
         testimonyStrip.classList.remove("is-highlight");
@@ -1190,6 +1434,12 @@
             ptBar.style.transitionDuration = Math.max(0, transitionMs) + "ms";
           }
         }
+        if (post1Bar) {
+          post1Bar.classList.toggle("is-hidden", opts.showPost1 === false);
+          if (hasTransition) {
+            post1Bar.style.transitionDuration = Math.max(0, transitionMs) + "ms";
+          }
+        }
         if (posteriorBar) {
           posteriorBar.classList.toggle("is-hidden", opts.showPosterior === false);
           if (hasTransition) {
@@ -1201,6 +1451,9 @@
         }
         if (posteriorRow) {
           posteriorRow.classList.toggle("is-highlight", !!opts.highlightPosterior);
+        }
+        if (post1Row) {
+          post1Row.classList.toggle("is-highlight", !!opts.highlightPost1);
         }
       },
       setHighlight: function (kind) {
@@ -1251,17 +1504,43 @@
       update: function (model, options) {
         var opts = options || {};
         if (opts.hidePosterior) {
+          if (post1BarValue) {
+            post1BarValue.classList.add("is-hidden-text");
+            post1BarValue.textContent = "hidden";
+          }
           posteriorBarValue.classList.add("is-hidden-text");
           posteriorBarValue.textContent = "hidden";
+          if (advancedPost1) {
+            advancedPost1.textContent = "hidden until update";
+          }
           advancedPost.textContent = "hidden until update";
+          if (advancedEvidence1) {
+            advancedEvidence1.textContent = "hidden until update";
+          }
+          if (advancedEvidence2) {
+            advancedEvidence2.textContent = "hidden until update";
+          }
           advancedEvidence.textContent = "hidden until update";
           advancedKl.textContent = "hidden until update";
           return;
         }
 
+        if (post1BarValue) {
+          post1BarValue.classList.remove("is-hidden-text");
+          post1BarValue.textContent = percent(model.posteriorAfterTestimony);
+        }
         posteriorBarValue.classList.remove("is-hidden-text");
-        posteriorBarValue.textContent = percent(model.posterior);
-        advancedPost.textContent = fixed(model.posterior, 3);
+        posteriorBarValue.textContent = percent(model.posteriorAfterSecondSignal);
+        if (advancedPost1) {
+          advancedPost1.textContent = fixed(model.posteriorAfterTestimony, 3);
+        }
+        advancedPost.textContent = fixed(model.posteriorAfterSecondSignal, 3);
+        if (advancedEvidence1) {
+          advancedEvidence1.textContent = fixed(model.stepEvidenceBits.testimony, 3);
+        }
+        if (advancedEvidence2) {
+          advancedEvidence2.textContent = fixed(model.stepEvidenceBits.secondSignal, 3);
+        }
         advancedEvidence.textContent = fixed(model.logEvidence, 3);
         advancedKl.textContent = fixed(model.klUpdateCost, 3);
       }
@@ -1319,10 +1598,10 @@
 
     function applyReplayStep(step, options) {
       var opts = options || {};
-      var replayStep = Math.max(1, Math.min(4, Number(step) || 1));
+      var replayStep = Math.max(1, Math.min(5, Number(step) || 1));
       var previousReplayStep = replay.step;
       var profile = getReplayProfile();
-      var model = window.RainModel.deriveState(state);
+      var model = currentModel();
       var shouldAnimate = !!opts.animated && !prefersReducedMotion;
 
       replay.step = replayStep;
@@ -1351,7 +1630,9 @@
         CurvesViz.setVisibility({
           ghostPrior: false,
           subdueLikelihood: true,
+          showPost1: false,
           showPosterior: false,
+          highlightPost1: false,
           highlightPosterior: false,
           transitionMs: profile.transitionMs
         });
@@ -1365,7 +1646,7 @@
             conditionalViz.setHighlightedEvent("rain");
           }
         }
-        summary.textContent = "Step 1/4: Start with your prior belief before testimony.";
+        summary.textContent = "Step 1/5: Start with your prior belief before testimony.";
         return;
       }
 
@@ -1373,7 +1654,9 @@
         CurvesViz.setVisibility({
           ghostPrior: false,
           subdueLikelihood: false,
+          showPost1: false,
           showPosterior: false,
+          highlightPost1: false,
           highlightPosterior: false,
           transitionMs: profile.transitionMs
         });
@@ -1388,28 +1671,29 @@
             conditionalViz.setHighlightedEvent("testimony");
           }
         }
-        summary.textContent = "Step 2/4: Highlight testimony as a reliability-weighted signal.";
+        summary.textContent = "Step 2/5: Inspect testimony as a reliability-weighted channel.";
         return;
       }
 
       if (replayStep === 3) {
         CurvesViz.setVisibility({
-          ghostPrior: true,
+          ghostPrior: false,
           subdueLikelihood: false,
-          showPosterior: true,
-          highlightPosterior: true,
+          showPost1: true,
+          showPosterior: false,
+          highlightPost1: true,
+          highlightPosterior: false,
           transitionMs: profile.transitionMs
         });
         GaugesViz.update(model, { hidePosterior: false });
         ParticlesViz.playDriftToPosterior({
           priorMean: model.prior,
-          posterior: model.posterior,
+          posterior: model.posteriorAfterTestimony,
           fromPrior: true,
           animate: shouldAnimate,
           durationMs: profile.particleDriftMs
         });
-        resolvePrediction(model);
-        pulseRainPreview("replay", model.prior, model.posterior);
+        pulseRainPreview("replay", model.prior, model.posteriorAfterTestimony);
         if (conditionalViz) {
           if (typeof conditionalViz.setPerspective === "function") {
             conditionalViz.setPerspective("testimony", { animate: shouldAnimate, source: "replay", mode: "staged" });
@@ -1418,27 +1702,60 @@
             conditionalViz.setHighlightedEvent("testimony");
           }
         }
-        summary.textContent = "Step 3/4: Bayes forces an updated posterior from prior and testimony. Now we are only counting testimony-positive days.";
+        summary.textContent = "Step 3/5: Apply Bayes once to get posterior after testimony.";
+        return;
+      }
+
+      if (replayStep === 4) {
+        CurvesViz.setVisibility({
+          ghostPrior: true,
+          subdueLikelihood: false,
+          showPost1: true,
+          showPosterior: true,
+          highlightPost1: false,
+          highlightPosterior: true,
+          transitionMs: profile.transitionMs
+        });
+        GaugesViz.update(model, { hidePosterior: false });
+        ParticlesViz.playDriftToPosterior({
+          priorMean: model.posteriorAfterTestimony,
+          posterior: model.posteriorAfterSecondSignal,
+          fromPrior: true,
+          animate: shouldAnimate,
+          durationMs: profile.particleDriftMs
+        });
+        pulseRainPreview("replay", model.posteriorAfterTestimony, model.posteriorAfterSecondSignal);
+        if (conditionalViz) {
+          if (typeof conditionalViz.setPerspective === "function") {
+            conditionalViz.setPerspective("testimony", { animate: false, source: "replay", mode: "direct" });
+          }
+          if (typeof conditionalViz.setHighlightedEvent === "function") {
+            conditionalViz.setHighlightedEvent(null);
+          }
+        }
+        summary.textContent = "Step 4/5: Apply the second signal from looking outside.";
         return;
       }
 
       CurvesViz.setVisibility({
         ghostPrior: true,
         subdueLikelihood: false,
+        showPost1: true,
         showPosterior: true,
+        highlightPost1: false,
         highlightPosterior: true,
         transitionMs: profile.transitionMs
       });
       GaugesViz.update(model, { hidePosterior: false });
       ParticlesViz.playDriftToPosterior({
-        priorMean: model.prior,
-        posterior: model.posterior,
+        priorMean: model.posteriorAfterSecondSignal,
+        posterior: model.posteriorAfterSecondSignal,
         fromPrior: false,
-        resample: previousReplayStep !== 3,
+        resample: previousReplayStep !== 4,
         animate: false,
         durationMs: 0
       });
-      DecisionViz.setDecisionState(model.posterior, { emphasize: true });
+      DecisionViz.setDecisionState(model.posteriorAfterSecondSignal, { emphasize: true });
       DecisionViz.flashThreshold();
       if (conditionalViz) {
         if (typeof conditionalViz.setPerspective === "function") {
@@ -1448,7 +1765,7 @@
           conditionalViz.setHighlightedEvent(null);
         }
       }
-      summary.textContent = "Step 4/4: Compare posterior to threshold and choose the action.";
+      summary.textContent = "Step 5/5: Compare final posterior to threshold and choose the action.";
     }
 
     function startReplay() {
@@ -1466,8 +1783,8 @@
 
     function jumpToReplayStep(step) {
       cancelReplay("manual-step", { keepVisualState: false, keepProgress: false });
-      replay.step = Math.max(1, Math.min(4, Number(step) || 1));
-      setReplayProgress((replay.step - 1) / 3);
+      replay.step = Math.max(1, Math.min(5, Number(step) || 1));
+      setReplayProgress((replay.step - 1) / 4);
       setReplayPlayLabel();
       applyReplayStep(replay.step, { animated: !prefersReducedMotion });
     }
@@ -1480,6 +1797,9 @@
       priorSlider.value = fixed(state.prior, 2);
       truthSlider.value = fixed(state.tGivenR, 2);
       falseSlider.value = fixed(state.tGivenNotR, 2);
+      syncChannelModeControls();
+      syncFactorControls();
+      syncSecondSignalControls();
       syncSliderVisuals();
     }
 
@@ -1508,68 +1828,6 @@
       sliderVisualInputs.forEach(updateSliderVisual);
     }
 
-    function predictionLabel(kind) {
-      if (kind === "lower") {
-        return "lower";
-      }
-      if (kind === "higher") {
-        return "higher";
-      }
-      return "about the same";
-    }
-
-    function classifyPosteriorShift(model) {
-      var delta = Number(model.posterior) - Number(model.prior);
-      if (delta > PREDICTION_SAME_DELTA) {
-        return "higher";
-      }
-      if (delta < -PREDICTION_SAME_DELTA) {
-        return "lower";
-      }
-      return "same";
-    }
-
-    function setPredictionFeedbackMessage(message, statusClass) {
-      if (!predictionFeedback) {
-        return;
-      }
-      predictionFeedback.textContent = message || "";
-      predictionFeedback.classList.remove("is-correct");
-      predictionFeedback.classList.remove("is-incorrect");
-      if (statusClass) {
-        predictionFeedback.classList.add(statusClass);
-      }
-    }
-
-    function syncPredictionButtons() {
-      predictionButtons.forEach(function (button) {
-        var value = button.getAttribute("data-predict");
-        var selected = value === predictionChoice;
-        button.classList.toggle("is-selected", selected);
-        button.setAttribute("aria-pressed", selected ? "true" : "false");
-      });
-    }
-
-    function markPredictionPending() {
-      if (!predictionChoice) {
-        setPredictionFeedbackMessage("", null);
-        return;
-      }
-      setPredictionFeedbackMessage("Prediction saved. Commit an update to check it.", null);
-    }
-
-    function resolvePrediction(model) {
-      if (!predictionChoice) {
-        return;
-      }
-
-      var actual = classifyPosteriorShift(model);
-      var correct = predictionChoice === actual;
-      var relation = actual === "same" ? "about the same as" : actual + " than";
-      var message = "You predicted " + predictionLabel(predictionChoice) + "; posterior is " + relation + " prior.";
-      setPredictionFeedbackMessage(message, correct ? "is-correct" : "is-incorrect");
-    }
-
     function getSerializableState() {
       return {
         prior: state.prior,
@@ -1578,7 +1836,13 @@
         decisionThreshold: decisionState.threshold,
         falsePositiveCost: decisionState.falsePositiveCost,
         falseNegativeCost: decisionState.falseNegativeCost,
-        useCostThreshold: decisionState.useCostThreshold
+        useCostThreshold: decisionState.useCostThreshold,
+        channelMode: channelState.mode,
+        hitFactors: channelState.hitFactors,
+        falseFactors: channelState.falseFactors,
+        sGivenR: secondSignalState.sGivenR,
+        sGivenNotR: secondSignalState.sGivenNotR,
+        observation: secondSignalState.observation
       };
     }
 
@@ -1662,7 +1926,7 @@
       rainPreview.setTargetParams(signals);
 
       if (rainPreviewProb) {
-        rainPreviewProb.textContent = "P(rain | testimony) = " + fixed(model.posterior, 2);
+        rainPreviewProb.textContent = "P(rain | current evidence) = " + fixed(model.posterior, 2);
       }
       if (rainPreviewCertainty) {
         rainPreviewCertainty.textContent = "certainty: " + certaintyLabelFromUncertainty(signals.u);
@@ -1685,32 +1949,377 @@
       rainPreview.pulse(delta >= RAIN_PREVIEW_LARGE_DELTA ? "strong" : "testimony");
     }
 
+    function setActivePipelineStage(stage) {
+      var stages = [
+        { key: "truth", el: pipelineTruth },
+        { key: "channel", el: pipelineChannel },
+        { key: "signal", el: pipelineSignal },
+        { key: "update", el: pipelineUpdate }
+      ];
+      stages.forEach(function (item) {
+        if (!item.el) {
+          return;
+        }
+        item.el.classList.toggle("is-active", item.key === stage);
+      });
+    }
+
+    function observationLabel(observation) {
+      if (observation === "saw_rain") {
+        return "saw rain";
+      }
+      if (observation === "saw_no_rain") {
+        return "saw no rain";
+      }
+      return "not applied";
+    }
+
+    function signedPercentagePoints(delta) {
+      var value = Number(delta) * 100;
+      if (!Number.isFinite(value)) {
+        value = 0;
+      }
+      if (Math.abs(value) < 0.05) {
+        value = 0;
+      }
+      return (value >= 0 ? "+" : "") + fixed(value, 1) + " pp";
+    }
+
+    function syncChannelModeControls() {
+      var isFactorized = channelState.mode === "factorized";
+      if (channelModeSimple) {
+        channelModeSimple.checked = !isFactorized;
+      }
+      if (channelModeFactorized) {
+        channelModeFactorized.checked = isFactorized;
+      }
+      channelSimpleControls.forEach(function (section) {
+        section.hidden = isFactorized;
+      });
+      if (factorizedPanel) {
+        factorizedPanel.hidden = !isFactorized;
+      }
+    }
+
+    function syncFactorControls() {
+      FACTOR_STAGES.forEach(function (stage) {
+        var hitSlider = hitFactorSliders[stage];
+        if (hitSlider) {
+          hitSlider.value = fixed(channelState.hitFactors[stage], 2);
+        }
+        var hitOutput = hitFactorOutputs[stage];
+        if (hitOutput) {
+          hitOutput.textContent = fixed(channelState.hitFactors[stage], 2);
+        }
+
+        var falseSlider = falseFactorSliders[stage];
+        if (falseSlider) {
+          falseSlider.value = fixed(channelState.falseFactors[stage], 2);
+        }
+        var falseOutput = falseFactorOutputs[stage];
+        if (falseOutput) {
+          falseOutput.textContent = fixed(channelState.falseFactors[stage], 2);
+        }
+      });
+    }
+
+    function syncSecondSignalControls() {
+      if (secondSignalObservation) {
+        secondSignalObservation.value = secondSignalState.observation;
+      }
+      if (secondSignalTrueSlider) {
+        secondSignalTrueSlider.value = fixed(secondSignalState.sGivenR, 2);
+      }
+      if (secondSignalTrueValue) {
+        secondSignalTrueValue.textContent = percent(secondSignalState.sGivenR);
+      }
+      if (secondSignalFalseSlider) {
+        secondSignalFalseSlider.value = fixed(secondSignalState.sGivenNotR, 2);
+      }
+      if (secondSignalFalseValue) {
+        secondSignalFalseValue.textContent = percent(secondSignalState.sGivenNotR);
+      }
+      if (secondSignalCtaRain) {
+        secondSignalCtaRain.setAttribute("aria-pressed", secondSignalState.observation === "saw_rain" ? "true" : "false");
+      }
+      if (secondSignalCtaNoRain) {
+        secondSignalCtaNoRain.setAttribute("aria-pressed", secondSignalState.observation === "saw_no_rain" ? "true" : "false");
+      }
+      if (secondSignalCtaClear) {
+        secondSignalCtaClear.setAttribute("aria-pressed", secondSignalState.observation === "none" ? "true" : "false");
+      }
+    }
+
+    function updateEvidenceSummary(model) {
+      if (evidenceSummaryBits) {
+        evidenceSummaryBits.textContent = fixed(model.logEvidence, 3);
+      }
+      if (evidenceSummaryKl) {
+        evidenceSummaryKl.textContent = fixed(model.klUpdateCost, 3);
+      }
+      if (evidenceSummaryShift) {
+        evidenceSummaryShift.textContent = signedPercentagePoints(model.posteriorAfterSecondSignal - model.prior);
+      }
+    }
+
+    function testimonyOnlyPosterior(prior, tGivenR, tGivenNotR) {
+      var sample = window.RainModel.deriveSequentialState({
+        prior: prior,
+        tGivenR: tGivenR,
+        tGivenNotR: tGivenNotR,
+        sGivenR: DEFAULT_SECOND_SIGNAL_GIVEN_R,
+        sGivenNotR: DEFAULT_SECOND_SIGNAL_GIVEN_NOT_R,
+        observation: "none"
+      });
+      return clamp01(sample.posteriorAfterSecondSignal);
+    }
+
+    function updateScenarioComparison(model) {
+      if (!scenarioCompareCard) {
+        return;
+      }
+
+      scenarioCompareCard.title = "Comparison rows hold second signal off to isolate testimony quality.";
+      var prior = clamp01(model.prior);
+      var current = testimonyOnlyPosterior(prior, model.tGivenR, model.tGivenNotR);
+      var canonical = testimonyOnlyPosterior(prior, window.RainModel.PRESETS.canonical.tGivenR, window.RainModel.PRESETS.canonical.tGivenNotR);
+      var veryReliable = testimonyOnlyPosterior(prior, window.RainModel.PRESETS.very_reliable.tGivenR, window.RainModel.PRESETS.very_reliable.tGivenNotR);
+      var unreliable = testimonyOnlyPosterior(prior, window.RainModel.PRESETS.unreliable.tGivenR, window.RainModel.PRESETS.unreliable.tGivenNotR);
+
+      if (scenarioCompareCurrent) {
+        scenarioCompareCurrent.textContent = percent(current);
+      }
+      if (scenarioCompareCanonical) {
+        scenarioCompareCanonical.textContent = percent(canonical);
+      }
+      if (scenarioCompareVeryReliable) {
+        scenarioCompareVeryReliable.textContent = percent(veryReliable);
+      }
+      if (scenarioCompareUnreliable) {
+        scenarioCompareUnreliable.textContent = percent(unreliable);
+      }
+
+      if (scenarioCompareCurrentBar) {
+        scenarioCompareCurrentBar.style.width = percent(current);
+      }
+      if (scenarioCompareCanonicalBar) {
+        scenarioCompareCanonicalBar.style.width = percent(canonical);
+      }
+      if (scenarioCompareVeryReliableBar) {
+        scenarioCompareVeryReliableBar.style.width = percent(veryReliable);
+      }
+      if (scenarioCompareUnreliableBar) {
+        scenarioCompareUnreliableBar.style.width = percent(unreliable);
+      }
+    }
+
+    function syncFormulaLevelUI() {
+      var valid = { basic: true, symbolic: true, derived: true };
+      if (!valid[formulaLevel]) {
+        formulaLevel = "basic";
+      }
+      formulaLevelButtons.forEach(function (button) {
+        var level = button.getAttribute("data-formula-level");
+        var active = level === formulaLevel;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      if (formulaPanelBasic) {
+        formulaPanelBasic.hidden = formulaLevel !== "basic";
+      }
+      if (formulaPanelSymbolic) {
+        formulaPanelSymbolic.hidden = formulaLevel !== "symbolic";
+      }
+      if (formulaPanelDerived) {
+        formulaPanelDerived.hidden = formulaLevel !== "derived";
+      }
+    }
+
+    function setFormulaLevel(nextLevel, options) {
+      var optsSet = options || {};
+      var level = nextLevel === "symbolic" || nextLevel === "derived" ? nextLevel : "basic";
+      formulaLevel = level;
+      syncFormulaLevelUI();
+      if (optsSet.focus) {
+        var match = null;
+        for (var i = 0; i < formulaLevelButtons.length; i += 1) {
+          if (formulaLevelButtons[i].getAttribute("data-formula-level") === level) {
+            match = formulaLevelButtons[i];
+            break;
+          }
+        }
+        if (match && typeof match.focus === "function") {
+          match.focus();
+        }
+      }
+    }
+
+    function setSecondSignalObservation(nextObservation, options) {
+      var optsSet = options || {};
+      var observation = nextObservation === "saw_rain" || nextObservation === "saw_no_rain" ? nextObservation : "none";
+      secondSignalState.observation = observation;
+      syncSecondSignalControls();
+      render({
+        announce: optsSet.announce !== false,
+        resampleParticles: !!optsSet.resampleParticles,
+        animateParticles: !!optsSet.animateParticles
+      });
+    }
+
+    function applyFactorizedRatesFromFactors() {
+      state.tGivenR = factorProduct(channelState.hitFactors);
+      state.tGivenNotR = factorProduct(channelState.falseFactors);
+    }
+
+    function reseedFactorsFromSimpleRates() {
+      channelState.hitFactors = seededFactorsFromTotal(state.tGivenR);
+      channelState.falseFactors = seededFactorsFromTotal(state.tGivenNotR);
+    }
+
+    function setChannelMode(nextMode, options) {
+      var opts = options || {};
+      var safeMode = nextMode === "factorized" ? "factorized" : "simple";
+      if (channelState.mode === safeMode && !opts.force) {
+        syncChannelModeControls();
+        return;
+      }
+      channelState.mode = safeMode;
+      if (safeMode === "factorized") {
+        reseedFactorsFromSimpleRates();
+        applyFactorizedRatesFromFactors();
+      }
+      syncChannelModeControls();
+      syncFactorControls();
+      syncSliders();
+    }
+
+    function currentModel() {
+      return window.RainModel.deriveSequentialState({
+        prior: state.prior,
+        tGivenR: state.tGivenR,
+        tGivenNotR: state.tGivenNotR,
+        sGivenR: secondSignalState.sGivenR,
+        sGivenNotR: secondSignalState.sGivenNotR,
+        observation: secondSignalState.observation
+      });
+    }
+
+    function updatePipelineDetail(model, replayStep) {
+      if (!pipelineDetail) {
+        return;
+      }
+      var stage = replayStep || 0;
+      if (stage === 1) {
+        setActivePipelineStage("truth");
+        pipelineDetail.textContent = "Start from prior belief: " + percent(model.prior) + ".";
+        return;
+      }
+      if (stage === 2) {
+        setActivePipelineStage("channel");
+        pipelineDetail.textContent = "Channel mode: " + (channelState.mode === "factorized" ? "factorized" : "simple") + ".";
+        return;
+      }
+      if (stage === 3) {
+        setActivePipelineStage("signal");
+        pipelineDetail.textContent = "Step 1 testimony update moves belief to " + percent(model.posteriorAfterTestimony) + ".";
+        return;
+      }
+      if (stage === 4) {
+        setActivePipelineStage("update");
+        pipelineDetail.textContent = "Step 2 observation update (" + observationLabel(secondSignalState.observation) + ") moves to " + percent(model.posteriorAfterSecondSignal) + ".";
+        return;
+      }
+      if (stage === 5) {
+        setActivePipelineStage("update");
+        pipelineDetail.textContent = "Decision uses final posterior " + percent(model.posteriorAfterSecondSignal) + ".";
+        return;
+      }
+
+      setActivePipelineStage("channel");
+      pipelineDetail.textContent =
+        "Effective channel: P(T|R)=" +
+        fixed(model.tGivenR, 3) +
+        ", P(T|¬R)=" +
+        fixed(model.tGivenNotR, 3) +
+        "; observation update: " +
+        observationLabel(secondSignalState.observation) +
+        ".";
+    }
+
     function render(options) {
       var opts = options || {};
-      var model = window.RainModel.deriveState(state);
+      var model = currentModel();
 
       priorValue.textContent = percent(model.prior);
       truthValue.textContent = percent(model.tGivenR);
       falseValue.textContent = percent(model.tGivenNotR);
+      if (channelState.mode === "factorized") {
+        syncFactorControls();
+      }
+      if (factorHitTotal) {
+        factorHitTotal.textContent = fixed(model.tGivenR, 3);
+      }
+      if (factorFalseTotal) {
+        factorFalseTotal.textContent = fixed(model.tGivenNotR, 3);
+      }
+      syncSecondSignalControls();
 
       priorBar.style.width = percent(model.prior);
       ptBar.style.width = percent(model.pTestimony);
-      if (posteriorGhost) {
-        posteriorGhost.style.width = percent(model.prior);
+      if (post1Bar) {
+        post1Bar.style.width = percent(model.posteriorAfterTestimony);
       }
-      posteriorBar.style.width = percent(model.posterior);
+      if (posteriorGhost) {
+        posteriorGhost.style.width = percent(model.posteriorAfterTestimony);
+      }
+      posteriorBar.style.width = percent(model.posteriorAfterSecondSignal);
 
       priorBarValue.textContent = percent(model.prior);
       ptBarValue.textContent = percent(model.pTestimony);
-      posteriorBarValue.textContent = percent(model.posterior);
+      if (post1BarValue) {
+        post1BarValue.textContent = percent(model.posteriorAfterTestimony);
+      }
+      posteriorBarValue.textContent = percent(model.posteriorAfterSecondSignal);
 
-      summary.textContent = "";
+      summary.textContent = "Testimony posterior " + percent(model.posteriorAfterTestimony) + ". Final posterior after looking " + percent(model.posteriorAfterSecondSignal) + ".";
+      if (testimonyStrip) {
+        testimonyStrip.textContent = "Step 1: Testimony update. Friend says \"raining.\"";
+      }
+      if (secondSignalStrip) {
+        secondSignalStrip.textContent = "Step 2: Observation update. " + observationLabel(secondSignalState.observation) + ".";
+      }
+      if (twoStepPrior) {
+        twoStepPrior.textContent = percent(model.prior);
+      }
+      if (twoStepPost1) {
+        twoStepPost1.textContent = percent(model.posteriorAfterTestimony);
+      }
+      if (twoStepPost2) {
+        twoStepPost2.textContent = percent(model.posteriorAfterSecondSignal);
+      }
 
       advancedPt.textContent = fixed(model.pTestimony, 3);
       advancedNum.textContent = fixed(model.numerator, 3);
-      advancedPost.textContent = fixed(model.posterior, 3);
+      if (advancedPt2) {
+        advancedPt2.textContent = fixed(model.pSecondSignalEvent, 3);
+      }
+      if (advancedNum2) {
+        advancedNum2.textContent = fixed(model.secondSignalNumerator, 3);
+      }
+      if (advancedPost1) {
+        advancedPost1.textContent = fixed(model.posteriorAfterTestimony, 3);
+      }
+      advancedPost.textContent = fixed(model.posteriorAfterSecondSignal, 3);
+      if (advancedEvidence1) {
+        advancedEvidence1.textContent = fixed(model.stepEvidenceBits.testimony, 3);
+      }
+      if (advancedEvidence2) {
+        advancedEvidence2.textContent = fixed(model.stepEvidenceBits.secondSignal, 3);
+      }
       advancedEvidence.textContent = fixed(model.logEvidence, 3);
       advancedKl.textContent = fixed(model.klUpdateCost, 3);
+      updateEvidenceSummary(model);
+      updateScenarioComparison(model);
 
       updateLossReadout(model);
       updateRainPreview(model);
@@ -1719,11 +2328,12 @@
           prior: model.prior,
           tGivenR: model.tGivenR,
           tGivenNotR: model.tGivenNotR,
-          posterior: model.posterior,
+          posterior: model.posteriorAfterTestimony,
           replayStep: replay.step,
           reducedMotion: prefersReducedMotion
         });
       }
+      updatePipelineDetail(model, replay.step);
       applyUnlock(root, unlockStep);
       updatePresetButtons(presetButtons, activePresetKey);
       updateParticles(model, {
@@ -1772,6 +2382,11 @@
         tGivenNotR: window.RainModel.clamp01(nextState.tGivenNotR)
       };
 
+      if (channelState.mode === "factorized") {
+        reseedFactorsFromSimpleRates();
+        applyFactorizedRatesFromFactors();
+      }
+
       if (opts.presetKey) {
         activePresetKey = opts.presetKey;
       }
@@ -1804,21 +2419,59 @@
       cancelReplay("slider-input", { keepVisualState: false, keepProgress: false });
       state[key] = Number(value);
       updateActivePresetFromManualInput();
-      markPredictionPending();
       syncSliderVisuals();
       scheduleInputRender();
     }
 
     function onSliderCommit(key, value) {
-      var previousPosterior = window.RainModel.deriveState(state).posterior;
+      var previousPosterior = currentModel().posteriorAfterSecondSignal;
       cancelScheduledInputRender();
       cancelReplay("slider-commit", { keepVisualState: false, keepProgress: false });
       state[key] = Number(value);
       updateActivePresetFromManualInput();
       syncSliderVisuals();
       render({ announce: true, resampleParticles: true, animateParticles: true });
-      resolvePrediction(window.RainModel.deriveState(state));
-      pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
+      pulseRainPreview("testimony", previousPosterior, currentModel().posteriorAfterSecondSignal);
+    }
+
+    function onFactorSliderInput(pathKey, stage, value) {
+      cancelReplay("factor-input", { keepVisualState: false, keepProgress: false });
+      channelState[pathKey][stage] = clamp01(value);
+      applyFactorizedRatesFromFactors();
+      updateActivePresetFromManualInput();
+      syncSliders();
+      scheduleInputRender();
+    }
+
+    function onFactorSliderCommit(pathKey, stage, value) {
+      var previousPosterior = currentModel().posteriorAfterSecondSignal;
+      cancelScheduledInputRender();
+      cancelReplay("factor-commit", { keepVisualState: false, keepProgress: false });
+      channelState[pathKey][stage] = clamp01(value);
+      applyFactorizedRatesFromFactors();
+      updateActivePresetFromManualInput();
+      syncSliders();
+      render({ announce: true, resampleParticles: true, animateParticles: true });
+      pulseRainPreview("testimony", previousPosterior, currentModel().posteriorAfterSecondSignal);
+    }
+
+    function onSecondSignalInput(key, value) {
+      cancelReplay("second-signal-input", { keepVisualState: false, keepProgress: false });
+      secondSignalState[key] = clamp01(value);
+      syncSecondSignalControls();
+      syncSliderVisuals();
+      scheduleInputRender();
+    }
+
+    function onSecondSignalCommit(key, value) {
+      var previousPosterior = currentModel().posteriorAfterSecondSignal;
+      cancelScheduledInputRender();
+      cancelReplay("second-signal-commit", { keepVisualState: false, keepProgress: false });
+      secondSignalState[key] = clamp01(value);
+      syncSecondSignalControls();
+      syncSliderVisuals();
+      render({ announce: true, resampleParticles: true, animateParticles: true });
+      pulseRainPreview("testimony", previousPosterior, currentModel().posteriorAfterSecondSignal);
     }
 
     priorSlider.addEventListener("input", function () {
@@ -1842,9 +2495,123 @@
       onSliderCommit("tGivenNotR", falseSlider.value);
     });
 
+    if (channelModeSimple) {
+      channelModeSimple.addEventListener("change", function () {
+        if (!channelModeSimple.checked) {
+          return;
+        }
+        cancelScheduledInputRender();
+        cancelReplay("channel-mode", { keepVisualState: false, keepProgress: false });
+        setChannelMode("simple");
+        updateActivePresetFromManualInput();
+        render({ announce: true, resampleParticles: false, animateParticles: false });
+      });
+    }
+
+    if (channelModeFactorized) {
+      channelModeFactorized.addEventListener("change", function () {
+        if (!channelModeFactorized.checked) {
+          return;
+        }
+        cancelScheduledInputRender();
+        cancelReplay("channel-mode", { keepVisualState: false, keepProgress: false });
+        setChannelMode("factorized");
+        updateActivePresetFromManualInput();
+        render({ announce: true, resampleParticles: false, animateParticles: false });
+      });
+    }
+
+    FACTOR_STAGES.forEach(function (stage) {
+      var hitSlider = hitFactorSliders[stage];
+      if (hitSlider) {
+        hitSlider.addEventListener("input", function () {
+          onFactorSliderInput("hitFactors", stage, hitSlider.value);
+        });
+        hitSlider.addEventListener("change", function () {
+          onFactorSliderCommit("hitFactors", stage, hitSlider.value);
+        });
+      }
+
+      var falseSliderEl = falseFactorSliders[stage];
+      if (falseSliderEl) {
+        falseSliderEl.addEventListener("input", function () {
+          onFactorSliderInput("falseFactors", stage, falseSliderEl.value);
+        });
+        falseSliderEl.addEventListener("change", function () {
+          onFactorSliderCommit("falseFactors", stage, falseSliderEl.value);
+        });
+      }
+    });
+
+    if (secondSignalObservation) {
+      secondSignalObservation.addEventListener("change", function () {
+        cancelScheduledInputRender();
+        cancelReplay("second-signal-observation", { keepVisualState: false, keepProgress: false });
+        setSecondSignalObservation(secondSignalObservation.value, {
+          announce: true,
+          resampleParticles: false,
+          animateParticles: false
+        });
+      });
+    }
+
+    if (secondSignalCtaRain) {
+      secondSignalCtaRain.addEventListener("click", function () {
+        cancelScheduledInputRender();
+        cancelReplay("second-signal-cta", { keepVisualState: false, keepProgress: false });
+        setSecondSignalObservation("saw_rain", {
+          announce: true,
+          resampleParticles: false,
+          animateParticles: false
+        });
+      });
+    }
+
+    if (secondSignalCtaNoRain) {
+      secondSignalCtaNoRain.addEventListener("click", function () {
+        cancelScheduledInputRender();
+        cancelReplay("second-signal-cta", { keepVisualState: false, keepProgress: false });
+        setSecondSignalObservation("saw_no_rain", {
+          announce: true,
+          resampleParticles: false,
+          animateParticles: false
+        });
+      });
+    }
+
+    if (secondSignalCtaClear) {
+      secondSignalCtaClear.addEventListener("click", function () {
+        cancelScheduledInputRender();
+        cancelReplay("second-signal-cta", { keepVisualState: false, keepProgress: false });
+        setSecondSignalObservation("none", {
+          announce: true,
+          resampleParticles: false,
+          animateParticles: false
+        });
+      });
+    }
+
+    if (secondSignalTrueSlider) {
+      secondSignalTrueSlider.addEventListener("input", function () {
+        onSecondSignalInput("sGivenR", secondSignalTrueSlider.value);
+      });
+      secondSignalTrueSlider.addEventListener("change", function () {
+        onSecondSignalCommit("sGivenR", secondSignalTrueSlider.value);
+      });
+    }
+
+    if (secondSignalFalseSlider) {
+      secondSignalFalseSlider.addEventListener("input", function () {
+        onSecondSignalInput("sGivenNotR", secondSignalFalseSlider.value);
+      });
+      secondSignalFalseSlider.addEventListener("change", function () {
+        onSecondSignalCommit("sGivenNotR", secondSignalFalseSlider.value);
+      });
+    }
+
     presetButtons.forEach(function (button) {
       button.addEventListener("click", function () {
-        var previousPosterior = window.RainModel.deriveState(state).posterior;
+        var previousPosterior = currentModel().posteriorAfterSecondSignal;
         cancelScheduledInputRender();
         cancelReplay("preset", { keepVisualState: false, keepProgress: false });
         var presetKey = button.getAttribute("data-preset");
@@ -1859,15 +2626,14 @@
             tGivenR: preset.tGivenR,
             tGivenNotR: preset.tGivenNotR
           },
-          {
-            presetKey: presetKey,
-            announce: true,
-            resampleParticles: true,
-            animateParticles: true
-          }
-        );
-        resolvePrediction(window.RainModel.deriveState(state));
-        pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
+        {
+          presetKey: presetKey,
+          announce: true,
+          resampleParticles: true,
+          animateParticles: true
+        }
+      );
+        pulseRainPreview("testimony", previousPosterior, currentModel().posteriorAfterSecondSignal);
       });
     });
 
@@ -1944,7 +2710,7 @@
 
     if (resetButton) {
       resetButton.addEventListener("click", function () {
-        var previousPosterior = window.RainModel.deriveState(state).posterior;
+        var previousPosterior = currentModel().posteriorAfterSecondSignal;
         cancelScheduledInputRender();
         cancelReplay("reset", { keepVisualState: false, keepProgress: false });
         var preset = window.RainModel.PRESETS.canonical;
@@ -1952,6 +2718,12 @@
         decisionState.useCostThreshold = false;
         decisionState.falsePositiveCost = DEFAULT_FALSE_POSITIVE_COST;
         decisionState.falseNegativeCost = DEFAULT_FALSE_NEGATIVE_COST;
+        channelState.mode = "simple";
+        channelState.hitFactors = seededFactorsFromTotal(preset.tGivenR);
+        channelState.falseFactors = seededFactorsFromTotal(preset.tGivenNotR);
+        secondSignalState.observation = "none";
+        secondSignalState.sGivenR = DEFAULT_SECOND_SIGNAL_GIVEN_R;
+        secondSignalState.sGivenNotR = DEFAULT_SECOND_SIGNAL_GIVEN_NOT_R;
         setThresholdVisual();
         setState(
           {
@@ -1959,27 +2731,16 @@
             tGivenR: preset.tGivenR,
             tGivenNotR: preset.tGivenNotR
           },
-          {
-            presetKey: "canonical",
-            announce: true,
-            resampleParticles: true,
-            animateParticles: true
-          }
-        );
-        resolvePrediction(window.RainModel.deriveState(state));
-        pulseRainPreview("testimony", previousPosterior, window.RainModel.deriveState(state).posterior);
+        {
+          presetKey: "canonical",
+          announce: true,
+          resampleParticles: true,
+          animateParticles: true
+        }
+      );
+        pulseRainPreview("testimony", previousPosterior, currentModel().posteriorAfterSecondSignal);
       });
     }
-
-    predictionButtons.forEach(function (button) {
-      button.addEventListener("click", function () {
-        cancelScheduledInputRender();
-        cancelReplay("prediction-choice", { keepVisualState: false, keepProgress: false });
-        predictionChoice = button.getAttribute("data-predict");
-        syncPredictionButtons();
-        markPredictionPending();
-      });
-    });
 
     if (copyLinkButton) {
       copyLinkButton.addEventListener("click", function () {
@@ -2018,6 +2779,41 @@
       });
     });
 
+    formulaLevelButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        setFormulaLevel(button.getAttribute("data-formula-level"), { focus: false });
+      });
+      button.addEventListener("keydown", function (event) {
+        var key = event.key;
+        if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") {
+          return;
+        }
+        event.preventDefault();
+        if (!formulaLevelButtons.length) {
+          return;
+        }
+        var currentIx = formulaLevelButtons.indexOf(button);
+        if (currentIx < 0) {
+          currentIx = 0;
+        }
+        var nextIx = currentIx;
+        if (key === "ArrowRight") {
+          nextIx = (currentIx + 1) % formulaLevelButtons.length;
+        } else if (key === "ArrowLeft") {
+          nextIx = (currentIx - 1 + formulaLevelButtons.length) % formulaLevelButtons.length;
+        } else if (key === "Home") {
+          nextIx = 0;
+        } else if (key === "End") {
+          nextIx = formulaLevelButtons.length - 1;
+        }
+        var nextButton = formulaLevelButtons[nextIx];
+        if (!nextButton) {
+          return;
+        }
+        setFormulaLevel(nextButton.getAttribute("data-formula-level"), { focus: true });
+      });
+    });
+
     root.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && replay.mode === "playing") {
         event.preventDefault();
@@ -2042,8 +2838,7 @@
     bindUnlocking(setUnlockStep);
 
     syncSliders();
-    syncPredictionButtons();
-    markPredictionPending();
+    syncFormulaLevelUI();
     setActiveReplayStepButton(null);
     setReplayProgress(0);
     setReplayPlayLabel();

@@ -204,7 +204,38 @@
             <p id="posterior-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
             <p id="posterior-live" class="engine-summary"></p>
             <p id="engine-motion-note" class="motion-mode-note" role="status" aria-live="polite" hidden></p>
-            <p id="testimony-strip" class="event-strip">Friend says: "raining."</p>
+            <div class="event-strip-stack" aria-live="polite" aria-atomic="true">
+              <p id="testimony-strip" class="event-strip">Step 1: Testimony update. Signal: friend says "raining."</p>
+              <p id="second-signal-strip" class="event-strip event-strip-secondary">Step 2: Observation update. Not applied yet.</p>
+            </div>
+
+            <div id="channel-pipeline" class="channel-pipeline" role="status" aria-live="polite" aria-atomic="true">
+              <p class="channel-pipeline-title" aria-label="Truth to Channel to Signal to Update">
+                <span>Truth</span>
+                <span class="pipeline-title-sep" aria-hidden="true">→</span>
+                <span>Channel</span>
+                <span class="pipeline-title-sep" aria-hidden="true">→</span>
+                <span>Signal</span>
+                <span class="pipeline-title-sep" aria-hidden="true">→</span>
+                <span>Update</span>
+              </p>
+              <div class="channel-pipeline-row">
+                <span id="pipeline-truth" class="pipeline-chip">Truth</span>
+                <span class="pipeline-sep" aria-hidden="true">→</span>
+                <span id="pipeline-channel" class="pipeline-chip">Channel</span>
+                <span class="pipeline-sep" aria-hidden="true">→</span>
+                <span id="pipeline-signal" class="pipeline-chip">Signal</span>
+                <span class="pipeline-sep" aria-hidden="true">→</span>
+                <span id="pipeline-update" class="pipeline-chip">Update</span>
+              </div>
+              <p id="pipeline-detail" class="channel-pipeline-detail">Simple mode: direct testimony reliability.</p>
+            </div>
+
+            <div class="evidence-summary" role="status" aria-live="polite" aria-atomic="true">
+              <p class="evidence-chip">Evidence strength: <strong id="evidence-summary-bits">0.000</strong> bits</p>
+              <p class="evidence-chip">Belief-change cost: <strong id="evidence-summary-kl">0.000</strong> bits</p>
+              <p class="evidence-chip">Shift from prior: <strong id="evidence-summary-shift">+0.0 pp</strong></p>
+            </div>
 
             <div class="replay-panel" data-control="replay" data-step="3" role="region" aria-label="Replay stepper controls">
               <div class="replay-controls">
@@ -215,24 +246,15 @@
                 </div>
                 <div class="replay-steps" role="group" aria-label="Replay steps">
                   <button type="button" class="replay-step-btn" data-replay-step="1" aria-label="Replay step 1: Prior">1 Prior</button>
-                  <button type="button" class="replay-step-btn" data-replay-step="2" aria-label="Replay step 2: Testimony">2 Testimony</button>
-                  <button type="button" class="replay-step-btn" data-replay-step="3" aria-label="Replay step 3: Update">3 Update</button>
-                  <button type="button" class="replay-step-btn" data-replay-step="4" aria-label="Replay step 4: Decision">4 Decision</button>
+                  <button type="button" class="replay-step-btn" data-replay-step="2" aria-label="Replay step 2: Testimony channel">2 Channel</button>
+                  <button type="button" class="replay-step-btn" data-replay-step="3" aria-label="Replay step 3: Update after testimony">3 Update-1</button>
+                  <button type="button" class="replay-step-btn" data-replay-step="4" aria-label="Replay step 4: Second signal update">4 Update-2</button>
+                  <button type="button" class="replay-step-btn" data-replay-step="5" aria-label="Replay step 5: Decision">5 Decision</button>
                 </div>
               </div>
               <div class="replay-progress-track" aria-hidden="true">
                 <span id="replay-progress" class="replay-progress-fill"></span>
               </div>
-            </div>
-
-            <div class="prediction-panel" data-control="playground" data-step="3" role="group" aria-label="Prediction prompt">
-              <p class="prediction-label">Predict first: after testimony, will posterior be lower, about the same, or higher than prior?</p>
-              <div class="prediction-buttons">
-                <button type="button" class="prediction-btn" data-predict="lower">Lower</button>
-                <button type="button" class="prediction-btn" data-predict="same">About the same</button>
-                <button type="button" class="prediction-btn" data-predict="higher">Higher</button>
-              </div>
-              <p id="prediction-feedback" class="prediction-feedback" aria-live="polite" aria-atomic="true"></p>
             </div>
 
             <div class="engine-viz-layout">
@@ -249,7 +271,12 @@
                     <span id="pt-bar-value" class="bar-value"></span>
                   </div>
                   <div class="bar-row">
-                    <span class="bar-label">Posterior rain</span>
+                    <span class="bar-label">Posterior after testimony</span>
+                    <div class="bar-track"><span id="post1-bar" class="bar-fill posterior-waypoint"></span></div>
+                    <span id="post1-bar-value" class="bar-value"></span>
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-label">Posterior after looking</span>
                     <div class="bar-track posterior-track">
                       <span id="posterior-ghost" class="bar-fill ghost" aria-hidden="true"></span>
                       <span id="posterior-bar" class="bar-fill posterior"></span>
@@ -314,16 +341,97 @@
             </fieldset>
 
             <fieldset data-control="truth_telling" data-step="2" class="control-block">
+              <legend>Testimony channel mode</legend>
+              <div class="channel-mode-toggle" role="radiogroup" aria-label="Testimony channel mode">
+                <label for="channel-mode-simple">
+                  <input id="channel-mode-simple" name="channel-mode" type="radio" value="simple" checked />
+                  Simple channel
+                </label>
+                <label for="channel-mode-factorized">
+                  <input id="channel-mode-factorized" name="channel-mode" type="radio" value="factorized" />
+                  Factorized channel
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset data-control="truth_telling" data-step="2" class="control-block channel-simple-control">
               <legend>Channel reliability</legend>
               <label for="truth-slider">Says rain when rain is true <span class="math-inline">(<d-math>P(T|R)</d-math>)</span></label>
               <input id="truth-slider" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Truth telling rate when rain is true" />
               <output id="truth-value" for="truth-slider"></output>
             </fieldset>
 
-            <fieldset data-control="false_alarm" data-step="2" class="control-block">
+            <fieldset data-control="false_alarm" data-step="2" class="control-block channel-simple-control">
               <label for="false-slider">Says rain when it is not raining <span class="math-inline">(<d-math>P(T|\neg R)</d-math>)</span></label>
               <input id="false-slider" type="range" min="0" max="1" step="0.01" value="0.10" aria-label="False alarm rate when rain is false" />
               <output id="false-value" for="false-slider"></output>
+            </fieldset>
+
+            <fieldset id="factorized-channel-panel" data-control="truth_telling" data-step="2" class="control-block factorized-channel-panel" hidden>
+              <legend>Factorized testimony reliability</legend>
+              <p class="factorized-helper">
+                Compose reliability from channel stages. Products set effective <d-math>P(T|R)</d-math> and <d-math>P(T|\neg R)</d-math>.
+              </p>
+              <div class="factorized-grid">
+                <div class="factorized-column">
+                  <h3>Hit path (<d-math>P(T|R)</d-math>)</h3>
+                  <label for="hit-perception-slider">Perception reliability</label>
+                  <input id="hit-perception-slider" type="range" min="0.1" max="1" step="0.01" value="0.96" aria-label="Hit path perception reliability" />
+                  <output id="hit-perception-value" for="hit-perception-slider"></output>
+                  <label for="hit-memory-slider">Memory reliability</label>
+                  <input id="hit-memory-slider" type="range" min="0.1" max="1" step="0.01" value="0.96" aria-label="Hit path memory reliability" />
+                  <output id="hit-memory-value" for="hit-memory-slider"></output>
+                  <label for="hit-honesty-slider">Honesty reliability</label>
+                  <input id="hit-honesty-slider" type="range" min="0.1" max="1" step="0.01" value="0.96" aria-label="Hit path honesty reliability" />
+                  <output id="hit-honesty-value" for="hit-honesty-slider"></output>
+                  <label for="hit-communication-slider">Communication reliability</label>
+                  <input id="hit-communication-slider" type="range" min="0.1" max="1" step="0.01" value="0.96" aria-label="Hit path communication reliability" />
+                  <output id="hit-communication-value" for="hit-communication-slider"></output>
+                </div>
+                <div class="factorized-column">
+                  <h3>False-alarm path (<d-math>P(T|\neg R)</d-math>)</h3>
+                  <label for="false-perception-slider">Perception leakage</label>
+                  <input id="false-perception-slider" type="range" min="0.1" max="1" step="0.01" value="0.56" aria-label="False-alarm path perception leakage" />
+                  <output id="false-perception-value" for="false-perception-slider"></output>
+                  <label for="false-memory-slider">Memory leakage</label>
+                  <input id="false-memory-slider" type="range" min="0.1" max="1" step="0.01" value="0.56" aria-label="False-alarm path memory leakage" />
+                  <output id="false-memory-value" for="false-memory-slider"></output>
+                  <label for="false-honesty-slider">Honesty leakage</label>
+                  <input id="false-honesty-slider" type="range" min="0.1" max="1" step="0.01" value="0.56" aria-label="False-alarm path honesty leakage" />
+                  <output id="false-honesty-value" for="false-honesty-slider"></output>
+                  <label for="false-communication-slider">Communication leakage</label>
+                  <input id="false-communication-slider" type="range" min="0.1" max="1" step="0.01" value="0.56" aria-label="False-alarm path communication leakage" />
+                  <output id="false-communication-value" for="false-communication-slider"></output>
+                </div>
+              </div>
+              <p class="factorized-derived">
+                Derived totals: <d-math>P(T|R)</d-math> = <span id="factor-hit-total">0.850</span>,
+                <d-math>P(T|\neg R)</d-math> = <span id="factor-false-total">0.100</span>.
+              </p>
+            </fieldset>
+
+            <fieldset data-control="second_signal" data-step="3" class="control-block second-signal-panel">
+              <legend>Second signal: you look outside</legend>
+              <label for="second-signal-observation">Observation outcome</label>
+              <select id="second-signal-observation" aria-label="Observation outcome when you look outside">
+                <option value="none" selected>No second signal yet</option>
+                <option value="saw_rain">Saw rain</option>
+                <option value="saw_no_rain">Saw no rain</option>
+              </select>
+              <div class="second-signal-quick-actions" role="group" aria-label="Quick observation actions">
+                <button type="button" id="second-signal-cta-rain">Saw rain</button>
+                <button type="button" id="second-signal-cta-no-rain">Saw no rain</button>
+                <button type="button" id="second-signal-cta-clear">Clear</button>
+              </div>
+              <label for="second-signal-true-slider">Observation says rain when rain is true <span class="math-inline">(<d-math>P(S|R)</d-math>)</span></label>
+              <input id="second-signal-true-slider" type="range" min="0.5" max="1" step="0.01" value="0.92" aria-label="Second signal true positive rate" />
+              <output id="second-signal-true-value" for="second-signal-true-slider"></output>
+              <label for="second-signal-false-slider">Observation says rain when it is not raining <span class="math-inline">(<d-math>P(S|\neg R)</d-math>)</span></label>
+              <input id="second-signal-false-slider" type="range" min="0" max="0.5" step="0.01" value="0.08" aria-label="Second signal false alarm rate" />
+              <output id="second-signal-false-value" for="second-signal-false-slider"></output>
+              <p id="two-step-readout" class="two-step-readout">
+                Prior <span id="two-step-prior">--</span> -> Step 1 (testimony update) <span id="two-step-post1">--</span> -> Step 2 (observation update) <span id="two-step-post2">--</span>
+              </p>
             </fieldset>
 
             <div class="preset-row" data-control="presets" data-step="3" role="group" aria-label="Preset channel configurations">
@@ -333,21 +441,63 @@
               <button type="button" id="reset-state" data-cursor-label="Reset values">Reset</button>
             </div>
 
+            <div id="scenario-compare-card" class="scenario-compare-card" role="note" data-control="presets" data-step="3" title="Comparison rows hold second signal off to isolate testimony quality.">
+              <p class="scenario-compare-title">Testimony quality comparison</p>
+              <div class="scenario-compare-row is-current">
+                <span class="scenario-compare-label">Current</span>
+                <div class="scenario-compare-track"><span id="scenario-compare-current-bar" class="scenario-compare-fill"></span></div>
+                <span id="scenario-compare-current" class="scenario-compare-value">--</span>
+              </div>
+              <div class="scenario-compare-row">
+                <span class="scenario-compare-label">Canonical</span>
+                <div class="scenario-compare-track"><span id="scenario-compare-canonical-bar" class="scenario-compare-fill"></span></div>
+                <span id="scenario-compare-canonical" class="scenario-compare-value">--</span>
+              </div>
+              <div class="scenario-compare-row">
+                <span class="scenario-compare-label">Very reliable</span>
+                <div class="scenario-compare-track"><span id="scenario-compare-very-reliable-bar" class="scenario-compare-fill"></span></div>
+                <span id="scenario-compare-very-reliable" class="scenario-compare-value">--</span>
+              </div>
+              <div class="scenario-compare-row">
+                <span class="scenario-compare-label">Unreliable</span>
+                <div class="scenario-compare-track"><span id="scenario-compare-unreliable-bar" class="scenario-compare-fill"></span></div>
+                <span id="scenario-compare-unreliable" class="scenario-compare-value">--</span>
+              </div>
+              <p class="scenario-compare-note">Comparison rows hold second signal off to isolate testimony quality.</p>
+            </div>
+
             <button type="button" class="collapsible" id="advanced-toggle" data-control="advanced" data-step="3" aria-expanded="false">
               <span>Advanced</span>
               <span class="collapsible-indicator" aria-hidden="true"></span>
             </button>
             <div class="content" id="advanced-math">
-              <p>Bayes update:</p>
-              <d-math block>P(R|T)=\frac{P(T|R)P(R)}{P(T)}</d-math>
-              <p>With:</p>
-              <ul>
-                <li><strong><d-math>P(T)</d-math></strong> = <span id="advanced-pt"></span></li>
-                <li><strong>Numerator</strong> = <span id="advanced-num"></span></li>
-                <li><strong><d-math>P(R|T)</d-math></strong> = <span id="advanced-post"></span></li>
-                <li><strong>Evidence strength</strong> <d-math>\log_2\!\left(\frac{P(R|T)}{P(R)}\right)</d-math> = <span id="advanced-evidence"></span> bits</li>
-                <li><strong>KL update cost</strong> <d-math>D_{KL}(\text{post}||\text{prior})</d-math> = <span id="advanced-kl"></span> bits</li>
-              </ul>
+              <div class="formula-level-toggle" role="tablist" aria-label="Formula explanation level">
+                <button type="button" id="formula-level-basic" class="formula-level-btn is-active" data-formula-level="basic" role="tab" aria-selected="true" aria-controls="formula-panel-basic">Intuition</button>
+                <button type="button" id="formula-level-symbolic" class="formula-level-btn" data-formula-level="symbolic" role="tab" aria-selected="false" aria-controls="formula-panel-symbolic">Symbols</button>
+                <button type="button" id="formula-level-derived" class="formula-level-btn" data-formula-level="derived" role="tab" aria-selected="false" aria-controls="formula-panel-derived">Derivation</button>
+              </div>
+              <div id="formula-panel-basic" class="formula-panel" role="tabpanel" aria-labelledby="formula-level-basic">
+                <p class="formula-panel-line">New belief = old belief x evidence strength (then normalize).</p>
+              </div>
+              <div id="formula-panel-symbolic" class="formula-panel" role="tabpanel" aria-labelledby="formula-level-symbolic" hidden>
+                <p>Bayes update:</p>
+                <d-math block>P(R|T)=\frac{P(T|R)P(R)}{P(T)}</d-math>
+              </div>
+              <div id="formula-panel-derived" class="formula-panel" role="tabpanel" aria-labelledby="formula-level-derived" hidden>
+                <p>With:</p>
+                <ul>
+                  <li><strong><d-math>P(T)</d-math></strong> = <span id="advanced-pt"></span></li>
+                  <li><strong>Numerator</strong> = <span id="advanced-num"></span></li>
+                  <li><strong><d-math>P_1=P(R|T)</d-math></strong> = <span id="advanced-post1"></span></li>
+                  <li><strong>Second-event probability</strong> = <span id="advanced-pt2"></span></li>
+                  <li><strong>Second-event numerator</strong> = <span id="advanced-num2"></span></li>
+                  <li><strong><d-math>P_2=P(R|T,S)</d-math></strong> = <span id="advanced-post"></span></li>
+                  <li><strong>Evidence step 1</strong> = <span id="advanced-evidence-1"></span> bits</li>
+                  <li><strong>Evidence step 2</strong> = <span id="advanced-evidence-2"></span> bits</li>
+                  <li><strong>Total evidence strength</strong> = <span id="advanced-evidence"></span> bits</li>
+                  <li><strong>KL update cost</strong> <d-math>D_{KL}(\text{post}||\text{prior})</d-math> = <span id="advanced-kl"></span> bits</li>
+                </ul>
+              </div>
             </div>
           </div>
         </d-figure>
@@ -373,7 +523,7 @@
         </d-footnote>
       </p>
       <p>
-        Posterior is the rainy share inside that testimony subset. Use the three sliders above; this view updates live.
+        Posterior is the rainy share inside that testimony subset. This panel tracks testimony-conditioning; final action can still incorporate a second signal from looking outside.
       </p>
 
       <figure class="conditional-figure">
@@ -436,7 +586,7 @@
         </p>
       </aside>
       <p>
-        Try presets and predict first: will testimony move belief a lot or a little? Reliable testimony shifts belief a lot; unreliable testimony moves it only a little.<a class="reference-note-marker" href="#note-5" aria-label="Read reference note 5">[5]</a>
+        Try presets and compare how much belief moves under different testimony reliability. Reliable testimony shifts belief more; unreliable testimony moves it only a little.<a class="reference-note-marker" href="#note-5" aria-label="Read reference note 5">[5]</a>
         <d-cite key="kahneman-tversky-1982,gigerenzer-hoffrage-1995"></d-cite>
       </p>
       <p>
@@ -450,19 +600,18 @@
     <div id="unlock-step-5-sentinel" class="unlock-step-sentinel" data-unlock-step="5" aria-hidden="true"></div>
 
     <nav class="chapter-nav" aria-label="Chapter navigation">
-      <!-- Chapter links hidden until chapters are available -->
-      <span class="chapter-nav-link chapter-nav-prev chapter-nav-disabled" aria-disabled="true">
-        <span class="chapter-nav-meta">Chapter 7</span>
-        <span class="chapter-nav-title">Maximum Entropy</span>
+      <a class="chapter-nav-link chapter-nav-prev" href="chapters/ch03_epistemic_zero.html">
+        <span class="chapter-nav-meta">Chapter 3</span>
+        <span class="chapter-nav-title">Epistemic Zero</span>
+      </a>
+      <span class="chapter-nav-link chapter-nav-toc chapter-nav-disabled" aria-current="page">
+        <span class="chapter-nav-meta">Chapter 8</span>
+        <span class="chapter-nav-title">How to Change Your Mind</span>
       </span>
-      <span class="chapter-nav-link chapter-nav-toc chapter-nav-disabled" aria-disabled="true">
-        <span class="chapter-nav-meta">From</span>
-        <span class="chapter-nav-title">The Last Assumption</span>
-      </span>
-      <span class="chapter-nav-link chapter-nav-next chapter-nav-disabled" aria-disabled="true">
-        <span class="chapter-nav-meta">Chapter 9</span>
-        <span class="chapter-nav-title">Hume's Ghost</span>
-      </span>
+      <a class="chapter-nav-link chapter-nav-next" href="chapters/ch03_epistemic_zero.html">
+        <span class="chapter-nav-meta">Read next</span>
+        <span class="chapter-nav-title">Epistemic Zero</span>
+      </a>
     </nav>
 
     <footer class="chapter-footer">

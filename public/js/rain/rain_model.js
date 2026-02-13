@@ -64,6 +64,10 @@
     return (pTruth * pRain) / pEvent;
   }
 
+  function applyObservation(prior, pObsGivenR, pObsGivenNotR) {
+    return posterior(prior, pObsGivenR, pObsGivenNotR);
+  }
+
   function safeLog2(value) {
     return Math.log(value) / Math.log(2);
   }
@@ -110,6 +114,63 @@
     };
   }
 
+  function deriveSequentialState(input) {
+    var prior = clamp01(input.prior);
+    var tGivenR = clamp01(input.tGivenR);
+    var tGivenNotR = clamp01(input.tGivenNotR);
+    var sGivenR = clamp01(input.sGivenR);
+    var sGivenNotR = clamp01(input.sGivenNotR);
+    var observation = input.observation === "saw_no_rain" ? "saw_no_rain" : input.observation === "saw_rain" ? "saw_rain" : "none";
+
+    var testimonyEvent = evidence(prior, tGivenR, tGivenNotR);
+    var testimonyNumerator = tGivenR * prior;
+    var postAfterTestimony = posterior(prior, tGivenR, tGivenNotR);
+
+    var obsGivenR = sGivenR;
+    var obsGivenNotR = sGivenNotR;
+    if (observation === "saw_no_rain") {
+      obsGivenR = 1 - sGivenR;
+      obsGivenNotR = 1 - sGivenNotR;
+    }
+
+    var secondEvent = observation === "none" ? 1 : evidence(postAfterTestimony, obsGivenR, obsGivenNotR);
+    var secondNumerator = observation === "none" ? postAfterTestimony : obsGivenR * postAfterTestimony;
+    var postAfterSecond = observation === "none" ? postAfterTestimony : applyObservation(postAfterTestimony, obsGivenR, obsGivenNotR);
+
+    var step1Evidence = 0;
+    if (prior > EPS && postAfterTestimony > EPS) {
+      step1Evidence = safeLog2(postAfterTestimony / prior);
+    }
+    var step2Evidence = 0;
+    if (postAfterTestimony > EPS && postAfterSecond > EPS) {
+      step2Evidence = safeLog2(postAfterSecond / postAfterTestimony);
+    }
+
+    return {
+      prior: prior,
+      tGivenR: tGivenR,
+      tGivenNotR: tGivenNotR,
+      pTestimony: testimonyEvent,
+      numerator: testimonyNumerator,
+      posterior: postAfterSecond,
+      posteriorAfterTestimony: postAfterTestimony,
+      posteriorAfterSecondSignal: postAfterSecond,
+      secondSignalGivenR: sGivenR,
+      secondSignalGivenNotR: sGivenNotR,
+      observation: observation,
+      secondSignalLikelihoodGivenR: obsGivenR,
+      secondSignalLikelihoodGivenNotR: obsGivenNotR,
+      pSecondSignalEvent: secondEvent,
+      secondSignalNumerator: secondNumerator,
+      stepEvidenceBits: {
+        testimony: step1Evidence,
+        secondSignal: step2Evidence
+      },
+      logEvidence: step1Evidence + step2Evidence,
+      klUpdateCost: bernoulliKL(postAfterSecond, prior)
+    };
+  }
+
   function round(value, places) {
     var m = Math.pow(10, places);
     return Math.round(value * m) / m;
@@ -120,7 +181,9 @@
     clamp01: clamp01,
     evidence: evidence,
     posterior: posterior,
+    applyObservation: applyObservation,
     deriveState: deriveState,
+    deriveSequentialState: deriveSequentialState,
     round: round
   };
 });

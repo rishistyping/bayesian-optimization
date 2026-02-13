@@ -21,6 +21,8 @@
   var STOP_DEDUP_EPS_PX = 1;
   var STAGE_SUBSET_MS = 260;
   var STAGE_RENORMALIZE_MS = 360;
+  var PERSPECTIVE_CYCLE_MS = 3500;
+  var PERSPECTIVE_CYCLE_ORDER = ["universe", "rain", "testimony", "not_rain"];
 
   function clamp01(value) {
     var n = Number(value);
@@ -194,8 +196,8 @@
       narrativeStage: "universe",
       highlight: null,
       reducedMotion: !!opts.reducedMotion,
-      runningRequested: true,
-      runningBeforeReduced: true,
+      runningRequested: false,
+      runningBeforeReduced: false,
       runningActual: false,
       inView: true,
       pageVisible: !!(!documentRef || !documentRef.hidden),
@@ -258,6 +260,8 @@
     var stageToken = 0;
     var fallbackResizeHandler = null;
     var visibilityHandler = null;
+    var perspectiveCycleTimer = null;
+    var perspectiveCycleIndex = 0;
 
     function formatConditionalLabel(eventSymbol, conditionSymbol) {
       return "P(" + eventSymbol + "|" + conditionSymbol + ")";
@@ -630,8 +634,10 @@
       var shouldRun = !state.reducedMotion && state.runningRequested && state.pageVisible && !state.transitionPaused;
       if (shouldRun) {
         startTimer();
+        startPerspectiveCycle();
       } else {
         stopTimer();
+        stopPerspectiveCycle();
       }
       updateSimulationButtons();
     }
@@ -639,6 +645,28 @@
     function setRunning(nextRunning) {
       state.runningRequested = !!nextRunning;
       refreshRunningState();
+    }
+
+    function startPerspectiveCycle() {
+      if (perspectiveCycleTimer) {
+        return;
+      }
+      perspectiveCycleIndex = PERSPECTIVE_CYCLE_ORDER.indexOf(state.perspective);
+      if (perspectiveCycleIndex < 0) {
+        perspectiveCycleIndex = 0;
+      }
+      perspectiveCycleTimer = setInterval(function () {
+        perspectiveCycleIndex = (perspectiveCycleIndex + 1) % PERSPECTIVE_CYCLE_ORDER.length;
+        var nextPerspective = PERSPECTIVE_CYCLE_ORDER[perspectiveCycleIndex];
+        setPerspective(nextPerspective, { animate: !state.reducedMotion, source: "cycle", mode: "direct" });
+      }, PERSPECTIVE_CYCLE_MS);
+    }
+
+    function stopPerspectiveCycle() {
+      if (perspectiveCycleTimer) {
+        clearInterval(perspectiveCycleTimer);
+        perspectiveCycleTimer = null;
+      }
     }
 
     function createStaticDrops() {
@@ -1236,6 +1264,7 @@
       if (typeof opts.onUserInteraction === "function") {
         opts.onUserInteraction({ type: "perspective", perspective: perspective });
       }
+      stopPerspectiveCycle();
       setPerspective(perspective, { animate: !state.reducedMotion, source: "user", mode: "staged" });
     }
 
@@ -1367,6 +1396,7 @@
       destroy: function () {
         clearNarrativeTransition();
         stopTimer();
+        stopPerspectiveCycle();
         if (resizeObserver && typeof resizeObserver.disconnect === "function") {
           resizeObserver.disconnect();
         }

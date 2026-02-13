@@ -21,6 +21,11 @@ Do not place specs, captures, prompt logs, archives, or prototypes inside `publi
 
 Use local HTTP preview for full behavior parity with production browser policies.
 
+Current pages:
+
+- Chapter 8: `http://127.0.0.1:8011/index.html`
+- Chapter 3: `http://127.0.0.1:8011/chapters/ch03_epistemic_zero.html`
+
 ## Developer commands
 
 1. Install dependencies:

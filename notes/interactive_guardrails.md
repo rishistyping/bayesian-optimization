@@ -6,6 +6,17 @@
 - Keep orchestration in `public/js/rain/rain_engine.js`; avoid duplicated state models.
 - Prefer additive modules in `public/js/rain/*` with explicit init/update/destroy contracts.
 - Keep runtime assets local and offline-capable (no CDN assumptions).
+- For multi-step updates, keep each evidence step explicit:
+  - stage 1 posterior and stage 2 posterior should both be visible/readable,
+  - decision logic should always consume the final posterior.
+
+## Chapter module boundaries
+
+- Chapter-specific logic should stay page-local:
+  - Chapter 8 modules under `public/js/rain/*`
+  - Chapter 3 modules under `public/js/epzero/*`
+- Shared article chrome/theme behavior remains in `public/js/hider.js` and `public/css/styles.css`.
+- Do not couple chapter engines directly; navigation is static links between pages.
 
 ## Accessibility checklist
 

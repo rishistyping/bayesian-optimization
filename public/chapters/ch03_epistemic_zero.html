@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Epistemic Zero | The Last Assumption</title>
+  <meta name="description" content="Chapter 3 interactive: isolate truth by subtracting possibilities with constraints." />
+  <link rel="icon" type="image/png" href="../thumbnail.png" />
+  <script defer src="../js/template.v2.js"></script>
+  <link rel="stylesheet" type="text/css" href="../css/styles.css" />
+  <link rel="stylesheet" type="text/css" href="../css/epzero.css" />
+  <script defer src="../js/hider.js"></script>
+  <script defer src="../js/vendor/d3.v7.min.js"></script>
+  <script defer src="../js/epzero/epzero_model.js"></script>
+  <script defer src="../js/epzero/epzero_viz_d3.js"></script>
+  <script defer src="../js/epzero/epzero_engine.js"></script>
+</head>
+
+<body>
+  <div id="page-scroll-progress" aria-hidden="true"></div>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <d-front-matter>
+    <script id='distill-front-matter' type="text/json">
+      {
+        "title": "Epistemic Zero",
+        "description": "A Chapter 3 explorable on binary constraints and possibility elimination.",
+        "authors": [
+          {
+            "author": "Emad Mostaque",
+            "authorURL": "",
+            "affiliation": "Intelligent Internet"
+          }
+        ],
+        "katex": {
+          "delimiters": [
+            {
+              "left": "$$",
+              "right": "$$",
+              "display": false
+            }
+          ]
+        }
+      }
+    </script>
+  </d-front-matter>
+
+  <d-title class="chapter-header" style="padding-bottom: 0">
+    <p class="chapter-kicker">The Last Assumption</p>
+    <h1>Epistemic Zero</h1>
+    <p class="chapter-subtitle">Chapter 3 · Constraint-first reasoning</p>
+    <div class="chapter-header-tools">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false" title="Toggle color theme">
+        <span class="theme-toggle-icon" aria-hidden="true"></span>
+        <span class="sr-only">Toggle color theme</span>
+      </button>
+    </div>
+  </d-title>
+
+  <d-byline></d-byline>
+
+  <d-article id="main-content" style="overflow-x: unset;">
+    <nav class="chapter-contents l-gutter" aria-label="Chapter contents">
+      <p class="chapter-contents-label">Chapter Contents</p>
+      <p class="chapter-contents-chapter">Chapter 3 · Epistemic Zero</p>
+      <div class="chapter-contents-progress" aria-hidden="true">
+        <span id="chapter-contents-progress-fill" class="chapter-contents-progress-fill"></span>
+      </div>
+      <ol class="chapter-contents-list">
+        <li><a href="#section-zero" data-contents-link>Start with all possibilities</a></li>
+        <li><a href="#section-constraints" data-contents-link>Ask constraints</a></li>
+        <li><a href="#section-eliminate" data-contents-link>Isolate by subtraction</a></li>
+      </ol>
+    </nav>
+
+    <section id="section-zero" class="story-section">
+      <h1>Start with all possibilities</h1>
+      <p>
+        Begin with a uniform candidate set. Here we use numbers 1 to 100. The goal is to identify one hidden value by removing what evidence rules out.
+      </p>
+    </section>
+
+    <section id="section-constraints" class="story-section">
+      <h1>Ask constraints</h1>
+      <p>
+        Each question is a binary constraint. A yes/no answer carves away possibilities and shrinks uncertainty.
+      </p>
+
+      <figure class="epzero-figure">
+        <d-figure id="epzero-engine" class="epzero-engine" aria-labelledby="epzero-title">
+          <figcaption id="epzero-title">Constraint stack and surviving set</figcaption>
+
+          <div class="epzero-shell">
+            <p id="epzero-live" class="epzero-summary" aria-live="polite"></p>
+
+            <div class="epzero-controls" role="group" aria-label="Constraint controls">
+              <label for="epzero-question">Question</label>
+              <select id="epzero-question" aria-label="Select a constraint question">
+                <option value="gt50">Is the number greater than 50?</option>
+                <option value="odd">Is the number odd?</option>
+                <option value="prime">Is the number prime?</option>
+                <option value="multiple3">Is it a multiple of 3?</option>
+                <option value="band_1_25">Is it in [1, 25]?</option>
+                <option value="band_26_50">Is it in [26, 50]?</option>
+                <option value="band_51_75">Is it in [51, 75]?</option>
+                <option value="band_76_100">Is it in [76, 100]?</option>
+              </select>
+
+              <label for="epzero-answer">Answer</label>
+              <select id="epzero-answer" aria-label="Constraint answer">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+
+              <div class="epzero-actions">
+                <button type="button" id="epzero-apply">Apply</button>
+                <button type="button" id="epzero-undo">Undo</button>
+                <button type="button" id="epzero-reset">Reset</button>
+              </div>
+            </div>
+
+            <div class="epzero-readout" aria-live="polite" aria-atomic="true">
+              <p>Remaining candidates: <strong id="epzero-remaining">100</strong></p>
+              <p>Uncertainty: <strong id="epzero-entropy">6.644</strong> bits</p>
+            </div>
+
+            <div id="epzero-viz" class="epzero-viz" aria-hidden="true"></div>
+
+            <div class="epzero-constraints">
+              <p class="epzero-constraints-title">Constraint stack</p>
+              <ol id="epzero-constraint-list"></ol>
+            </div>
+          </div>
+        </d-figure>
+      </figure>
+    </section>
+
+    <section id="section-eliminate" class="story-section">
+      <h1>Isolate by subtraction</h1>
+      <p>
+        Better updating is mostly elimination discipline: keep what survives all constraints, drop everything else, and avoid adding assumptions early.
+      </p>
+    </section>
+
+    <nav class="chapter-nav" aria-label="Chapter navigation">
+      <a class="chapter-nav-link chapter-nav-prev" href="../index.html">
+        <span class="chapter-nav-meta">Chapter 8</span>
+        <span class="chapter-nav-title">How to Change Your Mind</span>
+      </a>
+      <span class="chapter-nav-link chapter-nav-toc chapter-nav-disabled" aria-current="page">
+        <span class="chapter-nav-meta">Chapter 3</span>
+        <span class="chapter-nav-title">Epistemic Zero</span>
+      </span>
+      <a class="chapter-nav-link chapter-nav-next" href="../index.html">
+        <span class="chapter-nav-meta">Read next</span>
+        <span class="chapter-nav-title">How to Change Your Mind</span>
+      </a>
+    </nav>
+  </d-article>
+</body>
+
+</html>
