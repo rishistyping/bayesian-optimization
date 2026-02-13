@@ -2,4 +2,15 @@
 
 Non-published prompt files and planning prompts.
 
-Use for AI/collaboration prompt history and drafting artifacts.
+## Purpose
+
+Use this folder for:
+
+- AI collaboration prompts,
+- planning prompts used to draft implementation specs,
+- historical prompt references for repeatable workflows.
+
+## Notes
+
+- Treat contents as internal artifacts.
+- Do not copy prompt artifacts into `public/`.

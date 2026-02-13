@@ -2,12 +2,23 @@
 
 Non-published editorial and implementation notes.
 
-Use for working notes, narrative edits, and internal TODOs.
+## What belongs here
 
-change font
+Use this folder for:
 
-sideline references
+- implementation guardrails and architecture notes,
+- narrative/editorial working notes,
+- scoped planning docs that are not source-of-truth specs.
 
-scroll styling
+## Current files
 
-rain full window animation
+- `notes/interactive_guardrails.md`
+  - practical rules for interactive modules (performance, reduced motion, a11y).
+- `notes/scaffolding_plan.md`
+  - repository tooling/scaffolding plan notes.
+
+## Authoring guidance
+
+- Keep notes concise and decision-oriented.
+- Add dates or context headers for temporary investigations.
+- Promote stable guidance to root docs (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) when it becomes canonical.

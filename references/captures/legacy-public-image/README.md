@@ -1,5 +1,6 @@
 # Legacy Public Image
 
-Legacy directories moved from public/image to keep public runtime-only.
+Legacy directories moved from `public/image` to keep `public/` runtime-only.
 
-Treat as archived reference material; do not restore into `public/`.
+Treat this folder as archived reference material.
+Do not restore these files into runtime paths unless there is an explicit product decision.

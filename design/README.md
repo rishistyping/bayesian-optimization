@@ -9,6 +9,13 @@ The goal is to make changes specific enough that implementation is straightforwa
 - `design/layout_spec.md`: concrete layout rules based on Distill guidance.
 - `design/distill_context.md`: compatibility pointer.
 
+## Current design notes for this repo
+
+- Chapter 8 is a dense interactive chapter. Keep its narrative-first progression intact: prior -> channel -> forced update -> conditional perspective -> reflection.
+- Chapter 8 interaction visuals live primarily in `public/css/rain.css`.
+- Shared/global article and utility visuals live in `public/css/styles.css`.
+- If a style is chapter-specific, prefer `rain.css`; if shared across chapters/components, keep it in `styles.css`.
+
 ## How to write good layout instructions
 
 When asking for a layout change, describe:
@@ -101,20 +108,6 @@ Acceptance criteria
 3. [no runtime/logic regression]
 4. `npm run check` passes
 ```
-
-## Example instructions
-
-### Example A: Add a full-width figure block
-
-“Move the selected figure wrapper to `.l-screen-inset`, keep surrounding paragraphs at body width, and make sure there is no horizontal scrolling on small screens.”
-
-### Example B: Move optional notes to gutter
-
-“Put explanatory notes in `.l-gutter`, keep required controls in main flow, and preserve keyboard navigation order.”
-
-### Example C: Adjust chapter nav spacing only
-
-“Update spacing and alignment for chapter nav in `public/css/styles.css` only; do not change nav links, JS behavior, or interaction logic.”
 
 ## Verification checklist
 
