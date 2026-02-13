@@ -1253,3 +1253,153 @@ html.header-raindrop-disabled .chapter-header-fx {
     transition: transform 150ms ease-out;
   }
 }
+
+/* Share Buttons */
+.share-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.share-btn {
+  background: transparent;
+  border: 1px solid var(--tla-border, rgba(22, 45, 65, 0.18));
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tla-muted, #496073);
+  transition: all 0.15s ease;
+}
+
+.share-btn:hover {
+  background: var(--tla-accent, #a6ffff);
+  border-color: var(--tla-accent, #a6ffff);
+  color: var(--tla-text, #1f2b35);
+}
+
+.share-btn:focus-visible {
+  outline: 2px solid var(--tla-link, #1c4b72);
+  outline-offset: 2px;
+}
+
+.share-btn.copied {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
+/* Section anchor links */
+.section-link {
+  opacity: 0.4;
+  margin-right: 0.5rem;
+  transition: opacity 0.15s ease;
+  text-decoration: none;
+}
+
+.section-link:hover {
+  opacity: 1;
+}
+
+/* Print Styles */
+@media print {
+  /* Hide interactive elements */
+  .chapter-header-fx,
+  .chapter-header-tools,
+  .chapter-contents,
+  #page-scroll-progress,
+  .gd-cursor,
+  .theme-toggle,
+  .replay-panel,
+  .engine-shell,
+  .engine-loading,
+  .rain-figure,
+  .prior-slider-explorable,
+  .likelihood-calculator-explorable,
+  .channel-visualizer-explorable {
+    display: none !important;
+  }
+
+  /* Reset body and article for print */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+
+  d-title {
+    padding: 1rem 0;
+  }
+
+  d-title h1 {
+    font-size: 24pt;
+  }
+
+  d-article {
+    font-size: 11pt;
+    line-height: 1.6;
+    padding-top: 1rem;
+  }
+
+  d-article h2 {
+    font-size: 16pt;
+    page-break-after: avoid;
+  }
+
+  d-article h3 {
+    font-size: 14pt;
+    page-break-after: avoid;
+  }
+
+  d-article p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Show static fallbacks for interactives */
+  .explorable::before {
+    content: "[Interactive figure - view online]";
+    display: block;
+    padding: 1rem;
+    border: 1px dashed #999;
+    margin: 1rem 0;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+  }
+
+  /* Ensure links are visible */
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  /* Show URLs after links */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666;
+  }
+
+  /* But not for links without href */
+  a[href^=""]::after,
+  a[href^="#"]::after {
+    content: "";
+  }
+
+  /* Page margins */
+  @page {
+    margin: 2cm;
+  }
+
+  /* Reference notes should show */
+  .reference-note {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 10pt;
+  }
+}

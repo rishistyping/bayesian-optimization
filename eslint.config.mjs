@@ -13,6 +13,8 @@ export default [
         ...globals.browser,
         ...globals.es2021,
         module: "readonly",
+        katex: "readonly",
+        d3: "readonly",
       },
     },
     rules: {
