@@ -1,0 +1,306 @@
+/**
+ * Explorable Figures CSS
+ * 
+ * Styles for secondary interactive widgets embedded in the article.
+ * These provide smaller, focused interactions that complement the main visualization.
+ */
+
+/* Prior Slider Widget */
+.prior-slider-explorable {
+  background: var(--rain-panel, #ffffff);
+  border: 1px solid var(--rain-border, #d6e2ec);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  max-width: 320px;
+}
+
+.prior-slider-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prior-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prior-slider-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--rain-text, #1c2a35);
+}
+
+.prior-value {
+  font-family: "Space Mono", monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--rain-prior, #527ea5);
+}
+
+.prior-slider {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--rain-border, #d6e2ec);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.prior-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--rain-prior, #527ea5);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.prior-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.prior-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--rain-prior, #527ea5);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.prior-slider:focus-visible {
+  outline: 2px solid var(--rain-focus, #0f5f9a);
+  outline-offset: 2px;
+}
+
+.prior-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--rain-muted, #5e7181);
+}
+
+.prior-slider-result {
+  background: var(--rain-preview-bg, #f7fbfe);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.prior-slider-result p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--rain-text, #1c2a35);
+}
+
+.prior-slider-result strong {
+  color: var(--rain-posterior, #125f9d);
+}
+
+/* Likelihood Calculator Widget */
+.likelihood-calculator-explorable {
+  background: var(--rain-panel, #ffffff);
+  border: 1px solid var(--rain-border, #d6e2ec);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  max-width: 360px;
+}
+
+.likelihood-calculator-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.likelihood-calculator-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.likelihood-calculator-row label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--rain-text, #1c2a35);
+  display: flex;
+  justify-content: space-between;
+}
+
+.likelihood-calculator-row label output {
+  font-family: "Space Mono", monospace;
+  color: var(--rain-testimony, #3f8f66);
+}
+
+.likelihood-calculator-row input[type="range"] {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--rain-border, #d6e2ec);
+  border-radius: 3px;
+  outline: none;
+}
+
+.likelihood-calculator-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--rain-testimony, #3f8f66);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.likelihood-calculator-row input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--rain-testimony, #3f8f66);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.likelihood-ratio-result {
+  background: var(--rain-preview-bg, #f7fbfe);
+  border-radius: 6px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.likelihood-ratio-result p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--rain-text, #1c2a35);
+}
+
+.likelihood-ratio-result strong {
+  font-family: "Space Mono", monospace;
+  font-size: 1.1rem;
+  color: var(--rain-posterior, #125f9d);
+}
+
+/* Channel Reliability Visualizer */
+.channel-visualizer-explorable {
+  background: var(--rain-panel, #ffffff);
+  border: 1px solid var(--rain-border, #d6e2ec);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.channel-visualizer-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.channel-visualizer-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--rain-text, #1c2a35);
+  margin: 0;
+}
+
+.channel-visualizer-channels {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.channel-visualizer-channel {
+  flex: 1;
+  max-width: 140px;
+  text-align: center;
+}
+
+.channel-visualizer-channel-label {
+  font-size: 0.75rem;
+  color: var(--rain-muted, #5e7181);
+  margin-bottom: 0.5rem;
+}
+
+.channel-visualizer-bar {
+  height: 60px;
+  background: var(--rain-border, #d6e2ec);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.channel-visualizer-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--rain-testimony, #3f8f66);
+  transition: height 0.2s ease;
+}
+
+.channel-visualizer-channel-value {
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rain-text, #1c2a35);
+  margin-top: 0.5rem;
+}
+
+/* Dark theme */
+html[data-theme="dark"] .prior-slider-explorable,
+html[data-theme="dark"] .likelihood-calculator-explorable,
+html[data-theme="dark"] .channel-visualizer-explorable {
+  background: var(--rain-panel, #323a40);
+  border-color: var(--rain-border, #4b5963);
+}
+
+html[data-theme="dark"] .prior-slider-header h4,
+html[data-theme="dark"] .likelihood-calculator-row label,
+html[data-theme="dark"] .channel-visualizer-title {
+  color: var(--rain-text, #d7e1e8);
+}
+
+html[data-theme="dark"] .prior-slider-result,
+html[data-theme="dark"] .likelihood-ratio-result {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="dark"] .prior-slider-result p,
+html[data-theme="dark"] .likelihood-ratio-result p {
+  color: var(--rain-text, #d7e1e8);
+}
+
+html[data-theme="dark"] .prior-slider-scale,
+html[data-theme="dark"] .likelihood-calculator-row label,
+html[data-theme="dark"] .channel-visualizer-channel-label {
+  color: var(--rain-muted, #a9b9c4);
+}
+
+html[data-theme="dark"] .channel-visualizer-bar {
+  background: var(--rain-border, #4b5963);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .prior-slider-explorable *,
+  .likelihood-calculator-explorable *,
+  .channel-visualizer-explorable * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .prior-slider::-webkit-slider-thumb,
+  .prior-slider::-moz-range-thumb,
+  .likelihood-calculator-row input[type="range"]::-webkit-slider-thumb,
+  .likelihood-calculator-row input[type="range"]::-moz-range-thumb {
+    transition: none;
+  }
+}
