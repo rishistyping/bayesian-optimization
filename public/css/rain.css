@@ -415,7 +415,7 @@ html[data-theme="dark"] .evidence-chip {
   align-items: start;
   display: grid;
   gap: 0.7rem;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: 1fr minmax(200px, 280px);
 }
 
 .engine-viz-main {
@@ -433,7 +433,7 @@ html[data-theme="dark"] .evidence-chip {
   gap: 0.4rem;
   justify-self: end;
   padding: 0.7rem;
-  width: min(100%, 360px);
+  width: 100%;
 }
 
 .rain-preview-title {
@@ -449,8 +449,9 @@ html[data-theme="dark"] .evidence-chip {
   background: var(--rain-preview-bg);
   border: 1px solid var(--rain-border);
   border-radius: 8px;
-  min-height: 280px;
+  min-height: 220px;
   overflow: hidden;
+  position: relative;
   width: 100%;
 }
 
@@ -472,6 +473,76 @@ html[data-theme="dark"] .evidence-chip {
   stroke: var(--rain-preview-line);
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
+}
+
+/* Probability overlay on rain preview */
+.rain-preview-prob-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  text-align: right;
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .rain-preview-prob-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.rain-preview-prob-overlay .rain-preview-overlay-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: block;
+  line-height: 1.1;
+}
+
+.rain-preview-prob-overlay .rain-preview-overlay-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+/* Rain preview legend */
+.rain-preview-legend {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0.25em;
+}
+
+.rain-preview-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.7rem;
+  color: var(--rain-text);
+  opacity: 0.8;
+}
+
+.rain-preview-legend .legend-droplet {
+  display: inline-block;
+  width: 8px;
+  height: 12px;
+  border-radius: 0 0 50% 50%;
+  background: var(--rain-preview-line);
+}
+
+.rain-preview-legend .legend-droplet.light {
+  opacity: 0.35;
+}
+
+.rain-preview-legend .legend-droplet.medium {
+  opacity: 0.6;
+}
+
+.rain-preview-legend .legend-droplet.heavy {
+  opacity: 0.9;
 }
 
 .rain-preview-caption,

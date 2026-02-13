@@ -672,6 +672,7 @@
     var rainPreviewMount = root.querySelector("#rain-preview");
     var rainPreviewProb = root.querySelector("#rain-preview-prob");
     var rainPreviewCertainty = root.querySelector("#rain-preview-certainty");
+    var rainPreviewOverlay = root.querySelector("#rain-preview-overlay-value");
     var conditionalPanel = document.getElementById("conditional-probability-panel");
     var conditionalMotionNote = document.getElementById("cp-motion-note");
     var copyLinkButton = root.querySelector("#copy-link-btn");
@@ -1932,6 +1933,9 @@
       }
       if (rainPreviewCertainty) {
         rainPreviewCertainty.textContent = "certainty: " + certaintyLabelFromUncertainty(signals.u);
+      }
+      if (rainPreviewOverlay) {
+        rainPreviewOverlay.textContent = Math.round(model.posterior * 100) + "%";
       }
     }
 

@@ -345,10 +345,20 @@
 
               <aside id="rain-preview-card" class="rain-preview-card" aria-labelledby="rain-preview-title">
                 <h3 id="rain-preview-title" class="rain-preview-title">Rain Preview</h3>
-                <div id="rain-preview" class="rain-preview-mount" aria-hidden="true"></div>
-                <p class="rain-preview-caption">What you believe the sky is doing</p>
+                <div id="rain-preview" class="rain-preview-mount" aria-hidden="true">
+                  <div class="rain-preview-prob-overlay">
+                    <span id="rain-preview-overlay-value" class="rain-preview-overlay-value">0%</span>
+                    <span class="rain-preview-overlay-label">belief</span>
+                  </div>
+                </div>
+                <p class="rain-preview-caption">Rain intensity = P(rain | evidence). Heavier rain = higher posterior.</p>
                 <p id="rain-preview-prob" class="rain-preview-prob">P(rain | testimony) = 0.00</p>
                 <p id="rain-preview-certainty" class="rain-preview-certainty">certainty: medium</p>
+                <div class="rain-preview-legend">
+                  <span class="legend-item"><span class="legend-droplet light"></span> Low (0-30%)</span>
+                  <span class="legend-item"><span class="legend-droplet medium"></span> Medium (30-70%)</span>
+                  <span class="legend-item"><span class="legend-droplet heavy"></span> High (70-100%)</span>
+                </div>
               </aside>
             </div>
 
