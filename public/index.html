@@ -191,6 +191,24 @@
         <d-cite key="sep-bayes,ncbi-bayes-diagnosis"></d-cite>
       </p>
 
+      <button type="button" class="collapsible why-bayes-collapsible" id="why-bayes-toggle" aria-expanded="false">
+        <span>Why Bayes? Not arbitrary — forced by consistency</span>
+        <span class="collapsible-indicator" aria-hidden="true"></span>
+      </button>
+      <div class="content" id="why-bayes-content">
+        <p>Philosophers asked: how can we justify beliefs?</p>
+        <ul>
+          <li><strong>Infinite regress:</strong> chain never ends, nothing is justified</li>
+          <li><strong>Circularity:</strong> argument assumes what it tries to prove</li>
+          <li><strong>Arbitrary axiom:</strong> "just because" — why that starting point?</li>
+        </ul>
+        <p>This is the <em>Münchhausen Trilemma</em>. All three fail.</p>
+        <hr>
+        <p><strong>Bayes is the 4th option.</strong></p>
+        <p>Once you set your prior (<em>what you believed before</em>) and channel reliability (<em>how trustworthy the testimony</em>), the posterior is <em>forced</em>. Not chosen. Not arbitrary. <strong>Consistency requires it.</strong></p>
+        <p>As The Last Assumption argues: this is MU — Minimum Update. Update by the minimum amount the evidence demands. Nothing more, nothing less.</p>
+      </div>
+
       <figure class="rain-figure">
         <d-figure id="rain-engine" class="rain-engine" aria-labelledby="rain-engine-title">
           <figcaption id="rain-engine-title">Rain belief update</figcaption>
@@ -203,6 +221,7 @@
           <div class="engine-shell">
             <p id="posterior-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
             <p id="posterior-live" class="engine-summary"></p>
+            <p id="plain-english-recap" class="plain-english-recap"></p>
             <p id="engine-motion-note" class="motion-mode-note" role="status" aria-live="polite" hidden></p>
             <div class="event-strip-stack" aria-live="polite" aria-atomic="true">
               <p id="testimony-strip" class="event-strip">Step 1: Testimony update. Signal: friend says "raining."</p>
@@ -359,13 +378,20 @@
               <label for="truth-slider">Says rain when rain is true <span class="math-inline">(<d-math>P(T|R)</d-math>)</span></label>
               <input id="truth-slider" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Truth telling rate when rain is true" />
               <output id="truth-value" for="truth-slider"></output>
+              <p class="slider-hint">How often friend is right when it actually rains</p>
             </fieldset>
 
             <fieldset data-control="false_alarm" data-step="2" class="control-block channel-simple-control">
               <label for="false-slider">Says rain when it is not raining <span class="math-inline">(<d-math>P(T|\neg R)</d-math>)</span></label>
               <input id="false-slider" type="range" min="0" max="1" step="0.01" value="0.10" aria-label="False alarm rate when rain is false" />
               <output id="false-value" for="false-slider"></output>
+              <p class="slider-hint">How often friend wrongly says rain when it's dry</p>
             </fieldset>
+
+            <p class="probability-legend">
+              <strong>Confused?</strong> <d-math>P(T|R)</d-math> = "sensitivity" (friend says rain <em>when</em> it rains). 
+              <d-math>P(R|T)</d-math> = "posterior" (belief <em>after</em> hearing testimony). Bayes connects them.
+            </p>
 
             <fieldset id="factorized-channel-panel" data-control="truth_telling" data-step="2" class="control-block factorized-channel-panel" hidden>
               <legend>Factorized testimony reliability</legend>
@@ -407,6 +433,7 @@
               <p class="factorized-derived">
                 Derived totals: <d-math>P(T|R)</d-math> = <span id="factor-hit-total">0.850</span>,
                 <d-math>P(T|\neg R)</d-math> = <span id="factor-false-total">0.100</span>.
+                <span class="likelihood-ratio">Likelihood ratio: <span id="likelihood-ratio-value">8.50</span> (<d-math>\frac{P(T|R)}{P(T|\neg R)}</d-math>)</span>
               </p>
             </fieldset>
 
@@ -435,9 +462,9 @@
             </fieldset>
 
             <div class="preset-row" data-control="presets" data-step="3" role="group" aria-label="Preset channel configurations">
-              <button type="button" data-preset="canonical">TLA canonical</button>
-              <button type="button" data-preset="very_reliable">Very reliable friend</button>
-              <button type="button" data-preset="unreliable">Unreliable friend</button>
+              <button type="button" data-preset="canonical">Casual friend</button>
+              <button type="button" data-preset="very_reliable">Weather expert</button>
+              <button type="button" data-preset="unreliable">Friend who jokes</button>
               <button type="button" id="reset-state" data-cursor-label="Reset values">Reset</button>
             </div>
 
@@ -449,21 +476,38 @@
                 <span id="scenario-compare-current" class="scenario-compare-value">--</span>
               </div>
               <div class="scenario-compare-row">
-                <span class="scenario-compare-label">Canonical</span>
+                <span class="scenario-compare-label">Casual friend</span>
                 <div class="scenario-compare-track"><span id="scenario-compare-canonical-bar" class="scenario-compare-fill"></span></div>
                 <span id="scenario-compare-canonical" class="scenario-compare-value">--</span>
               </div>
               <div class="scenario-compare-row">
-                <span class="scenario-compare-label">Very reliable</span>
+                <span class="scenario-compare-label">Weather expert</span>
                 <div class="scenario-compare-track"><span id="scenario-compare-very-reliable-bar" class="scenario-compare-fill"></span></div>
                 <span id="scenario-compare-very-reliable" class="scenario-compare-value">--</span>
               </div>
               <div class="scenario-compare-row">
-                <span class="scenario-compare-label">Unreliable</span>
+                <span class="scenario-compare-label">Friend who jokes</span>
                 <div class="scenario-compare-track"><span id="scenario-compare-unreliable-bar" class="scenario-compare-fill"></span></div>
                 <span id="scenario-compare-unreliable" class="scenario-compare-value">--</span>
               </div>
               <p class="scenario-compare-note">Comparison rows hold second signal off to isolate testimony quality.</p>
+            </div>
+
+            <div class="probability-comparison-card" role="note">
+              <p class="probability-comparison-title">What do the numbers mean?</p>
+              <div class="probability-comparison-grid">
+                <div class="probability-comparison-item">
+                  <d-math>P(T|R)</d-math>
+                  <span class="probability-comparison-label">Sensitivity</span>
+                  <span class="probability-comparison-desc">Friend says rain <em>when</em> it rains</span>
+                </div>
+                <div class="probability-comparison-item">
+                  <d-math>P(R|T)</d-math>
+                  <span class="probability-comparison-label">Posterior</span>
+                  <span class="probability-comparison-desc">Belief <em>after</em> hearing testimony</span>
+                </div>
+              </div>
+              <p class="probability-comparison-note">Bayes connects them: P(R|T) = P(T|R)×P(R) / P(T)</p>
             </div>
 
             <button type="button" class="collapsible" id="advanced-toggle" data-control="advanced" data-step="3" aria-expanded="false">

@@ -10,21 +10,21 @@
   var PRESETS = {
     canonical: {
       key: "canonical",
-      label: "TLA canonical",
+      label: "Casual friend",
       prior: 0.30,
       tGivenR: 0.85,
       tGivenNotR: 0.10
     },
     very_reliable: {
       key: "very_reliable",
-      label: "Very reliable friend",
+      label: "Weather expert",
       prior: 0.30,
       tGivenR: 0.95,
       tGivenNotR: 0.02
     },
     unreliable: {
       key: "unreliable",
-      label: "Unreliable friend",
+      label: "Friend who jokes",
       prior: 0.30,
       tGivenR: 0.60,
       tGivenNotR: 0.40

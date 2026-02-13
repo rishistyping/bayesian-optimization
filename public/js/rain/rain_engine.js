@@ -574,6 +574,7 @@
     var posteriorBarValue = root.querySelector("#posterior-bar-value");
 
     var summary = root.querySelector("#posterior-live");
+    var plainEnglishRecap = root.querySelector("#plain-english-recap");
     var announcer = root.querySelector("#posterior-live-announcer");
     var engineMotionNote = root.querySelector("#engine-motion-note");
 
@@ -618,6 +619,7 @@
     var factorizedPanel = root.querySelector("#factorized-channel-panel");
     var factorHitTotal = root.querySelector("#factor-hit-total");
     var factorFalseTotal = root.querySelector("#factor-false-total");
+    var likelihoodRatioValue = root.querySelector("#likelihood-ratio-value");
     var pipelineTruth = root.querySelector("#pipeline-truth");
     var pipelineChannel = root.querySelector("#pipeline-channel");
     var pipelineSignal = root.querySelector("#pipeline-signal");
@@ -2262,6 +2264,10 @@
       if (factorFalseTotal) {
         factorFalseTotal.textContent = fixed(model.tGivenNotR, 3);
       }
+      if (likelihoodRatioValue) {
+        var lr = model.tGivenNotR > 0.001 ? model.tGivenR / model.tGivenNotR : model.tGivenR / 0.001;
+        likelihoodRatioValue.textContent = fixed(lr, 2);
+      }
       syncSecondSignalControls();
 
       priorBar.style.width = percent(model.prior);
@@ -2282,6 +2288,23 @@
       posteriorBarValue.textContent = percent(model.posteriorAfterSecondSignal);
 
       summary.textContent = "Testimony posterior " + percent(model.posteriorAfterTestimony) + ". Final posterior after looking " + percent(model.posteriorAfterSecondSignal) + ".";
+
+      // Plain English recap
+      if (plainEnglishRecap) {
+        var priorPct = percent(model.prior);
+        var postPct = percent(model.posteriorAfterSecondSignal);
+        var hasObservation = model.observation && model.observation !== "none";
+        var observationText = hasObservation ? "after looking outside" : "just from testimony";
+        
+        if (model.posteriorAfterSecondSignal > model.prior) {
+          plainEnglishRecap.textContent = "You started at " + priorPct + " belief it was raining. After hearing your friend's testimony, you updated to " + postPct + " — Bayes forces this increase because the testimony was informative.";
+        } else if (model.posteriorAfterSecondSignal < model.prior) {
+          plainEnglishRecap.textContent = "You started at " + priorPct + " belief it was raining. After the evidence, you dropped to " + postPct + " — Bayes forces this decrease because the evidence outweighed the testimony.";
+        } else {
+          plainEnglishRecap.textContent = "Your belief remains at " + priorPct + " — the evidence was uninformative, so consistency requires no change.";
+        }
+      }
+
       if (testimonyStrip) {
         testimonyStrip.textContent = "Step 1: Testimony update. Friend says \"raining.\"";
       }

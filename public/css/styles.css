@@ -362,6 +362,188 @@ d-article a:hover {
   content: "-";
 }
 
+/* Slider hint and probability legend */
+.slider-hint {
+  font-size: 0.75rem;
+  color: hsla(206, 10%, 35%, 0.8);
+  margin: 0.25em 0 0.75em;
+  font-style: italic;
+}
+
+html[data-theme="dark"] .slider-hint {
+  color: hsla(206, 10%, 70%, 0.8);
+}
+
+.probability-legend {
+  font-size: 0.85rem;
+  background: hsla(206, 95%, 95%, 0.1);
+  border-left: 3px solid hsla(206, 60%, 45%, 0.6);
+  padding: 0.75em 1em;
+  margin: 1em 0;
+  border-radius: 0 4px 4px 0;
+}
+
+html[data-theme="dark"] .probability-legend {
+  background: hsla(206, 20%, 15%, 0.5);
+  border-left-color: hsla(206, 60%, 55%, 0.6);
+}
+
+.probability-legend strong {
+  color: hsla(206, 60%, 35%, 1);
+}
+
+html[data-theme="dark"] .probability-legend strong {
+  color: hsla(206, 60%, 65%, 1);
+}
+
+.probability-legend .math-inline {
+  font-size: 0.9em;
+}
+
+/* Plain English recap */
+.plain-english-recap {
+  font-size: 0.9rem;
+  color: hsla(206, 10%, 30%, 0.9);
+  background: hsla(45, 80%, 92%, 0.4);
+  padding: 0.5em 0.75em;
+  border-radius: 4px;
+  margin: 0.5em 0;
+  border-left: 3px solid hsla(45, 70%, 50%, 0.6);
+  min-height: 1.5em;
+}
+
+html[data-theme="dark"] .plain-english-recap {
+  color: hsla(206, 10%, 75%, 0.9);
+  background: hsla(45, 20%, 18%, 0.4);
+  border-left-color: hsla(45, 70%, 55%, 0.6);
+}
+
+/* Likelihood ratio display */
+.likelihood-ratio {
+  display: block;
+  margin-top: 0.5em;
+  font-size: 0.85rem;
+  color: hsla(206, 60%, 35%, 0.9);
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .likelihood-ratio {
+  color: hsla(206, 60%, 65%, 0.9);
+}
+
+/* Probability comparison card */
+.probability-comparison-card {
+  background: hsla(206, 95%, 95%, 0.08);
+  border: 1px solid hsla(206, 40%, 60%, 0.25);
+  border-radius: 6px;
+  padding: 1em;
+  margin: 1em 0;
+}
+
+html[data-theme="dark"] .probability-comparison-card {
+  background: hsla(206, 20%, 15%, 0.4);
+  border-color: hsla(206, 40%, 50%, 0.3);
+}
+
+.probability-comparison-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75em;
+  color: hsla(206, 10%, 25%, 0.9);
+}
+
+html[data-theme="dark"] .probability-comparison-title {
+  color: hsla(206, 10%, 80%, 0.9);
+}
+
+.probability-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.probability-comparison-item {
+  text-align: center;
+  padding: 0.5em;
+  background: hsla(206, 95%, 97%, 0.1);
+  border-radius: 4px;
+}
+
+html[data-theme="dark"] .probability-comparison-item {
+  background: hsla(206, 20%, 20%, 0.3);
+}
+
+.probability-comparison-item d-math {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 0.25em;
+}
+
+.probability-comparison-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsla(206, 60%, 40%, 0.9);
+  margin-bottom: 0.25em;
+}
+
+html[data-theme="dark"] .probability-comparison-label {
+  color: hsla(206, 60%, 60%, 0.9);
+}
+
+.probability-comparison-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: hsla(206, 10%, 40%, 0.8);
+  font-style: italic;
+}
+
+html[data-theme="dark"] .probability-comparison-desc {
+  color: hsla(206, 10%, 70%, 0.8);
+}
+
+.probability-comparison-note {
+  font-size: 0.75rem;
+  color: hsla(206, 10%, 35%, 0.7);
+  margin: 0.75em 0 0;
+  text-align: center;
+}
+
+html[data-theme="dark"] .probability-comparison-note {
+  color: hsla(206, 10%, 65%, 0.7);
+}
+
+/* Why Bayes collapsible - special styling */
+.why-bayes-collapsible {
+  background: linear-gradient(135deg, hsla(206, 60%, 95%, 0.15) 0%, hsla(45, 80%, 90%, 0.1) 100%);
+  border: 1px solid hsla(206, 40%, 60%, 0.3);
+  margin: 1.5em 0 1em;
+}
+
+html[data-theme="dark"] .why-bayes-collapsible {
+  background: linear-gradient(135deg, hsla(206, 30%, 20%, 0.4) 0%, hsla(45, 30%, 15%, 0.3) 100%);
+  border-color: hsla(206, 40%, 50%, 0.4);
+}
+
+.why-bayes-collapsible:hover {
+  border-color: hsla(206, 60%, 45%, 0.6);
+}
+
+.why-bayes-collapsible + .content {
+  background: hsla(206, 95%, 97%, 0.05);
+  border-color: hsla(206, 40%, 60%, 0.2);
+}
+
+.why-bayes-collapsible + .content ul {
+  margin-bottom: 1em;
+}
+
+.why-bayes-collapsible + .content hr {
+  border: none;
+  border-top: 1px solid hsla(206, 20%, 70%, 0.3);
+  margin: 1em 0;
+}
+
 d-article .content {
   border-color: hsla(206, 95%, 20%, 0.2);
   border-style: solid;

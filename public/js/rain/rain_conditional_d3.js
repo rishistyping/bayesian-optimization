@@ -21,7 +21,7 @@
   var STOP_DEDUP_EPS_PX = 1;
   var STAGE_SUBSET_MS = 260;
   var STAGE_RENORMALIZE_MS = 360;
-  var PERSPECTIVE_CYCLE_MS = 3500;
+  var PERSPECTIVE_CYCLE_MS = 1800;
   var PERSPECTIVE_CYCLE_ORDER = ["universe", "rain", "testimony", "not_rain"];
 
   function clamp01(value) {
